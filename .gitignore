@@ -1,0 +1,47 @@
+# Dataset images - nie commituj zdjęć
+dataset/
+!dataset/.gitkeep
+
+# Models - duże pliki checkpointów
+models/
+!models/.gitkeep
+
+# Logs
+logs/
+!logs/.gitkeep
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Results - opcjonalnie możesz commitować CSV
+# results/
+# !results/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.log

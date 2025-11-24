@@ -122,5 +122,3 @@ Q=10:  ~70% accuracy  ← niedopuszczalne (>15% drop)
 ---
 
 **Status**: Kompresja ✅ | Pomiar jakości ✅ | Eksperymenty → do zrobienia
-
-**Czas realizacji**: ~2-3 dni treningów (6 eksperymentów × 2-4h każdy)

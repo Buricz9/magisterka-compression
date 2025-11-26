@@ -122,3 +122,6 @@ Q=10:  ~70% accuracy  ← niedopuszczalne (>15% drop)
 ---
 
 **Status**: Kompresja ✅ | Pomiar jakości ✅ | Eksperymenty → do zrobienia
+
+
+Zbiór danych : https://zenodo.org/records/10390295

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(python -c:*)",
+      "Bash(biber:*)",
+      "Bash(pdflatex:*)",
+      "WebFetch(domain:doi.org)",
+      "WebFetch(domain:www.nature.com)",
+      "WebFetch(domain:www.sciencedirect.com)"
+    ]
+  }
+}

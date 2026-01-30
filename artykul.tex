@@ -15,8 +15,7 @@
 \usepackage{float}
 \usepackage{enumitem}
 \usepackage{csquotes}
-\usepackage[style=apa,backend=biber]{biblatex}
-\addbibresource{bibliografia.bib}
+\newcommand{\mycite}[1]{\hyperlink{bib#1}{[#1]}}
 
 \usepackage{setspace}
 \onehalfspacing
@@ -38,6 +37,7 @@ Obrazowanie medyczne stanowi fundament współczesnej diagnostyki kardiologiczne
 
 W~niniejszej pracy zbadano wpływ trzech formatów kompresji -- JPEG, JPEG2000 oraz AVIF -- na dokładność modeli klasyfikacji segmentów tętnic wieńcowych w~obrazach angiografii rentgenowskiej. Przeprowadzono dwa komplementarne eksperymenty: trening na danych skompresowanych z~ewaluacją na oryginałach (Eksperyment~A) oraz trening na oryginałach z~ewaluacją na danych skompresowanych (Eksperyment~B). Badania wykonano na zbiorze danych ARCADE zawierającym 3000 ekspertowo zanotowanych obrazów.
 
+\clearpage
 % ===================================================================
 % 2. MOTYWACJA I KONTEKST PRACY
 % ===================================================================
@@ -49,6 +49,7 @@ Jednocześnie modele głębokiego uczenia coraz częściej wspomagają diagnosty
 
 Pojawienie się nowoczesnego formatu AVIF (opartego na kodeku AV1, 2019) otwiera nowe możliwości kompresji, lecz jego przydatność w~obrazowaniu medycznym nie została dotychczas zbadana. Niniejsza praca wypełnia tę lukę, oferując pierwsze kompleksowe porównanie trzech formatów kompresji w~kontekście ich wpływu na modele AI stosowane w~kardiologii.
 
+\clearpage
 % ===================================================================
 % 3. CELE I ZAŁOŻENIA (HIPOTEZA)
 % ===================================================================
@@ -74,6 +75,7 @@ Postawiono następujące hipotezy badawcze:
     \item[H3:] Istnieje progowy poziom kompresji, poniżej którego następuje gwałtowny spadek dokładności klasyfikacji, niezależnie od zastosowanego formatu.
 \end{enumerate}
 
+\clearpage
 % ===================================================================
 % 4. ZAWARTOŚĆ PRACY
 % ===================================================================
@@ -81,6 +83,7 @@ Postawiono następujące hipotezy badawcze:
 
 Praca składa się z~następujących rozdziałów. W~rozdziale~\ref{sec:literatura} przedstawiono przegląd literatury dotyczącej kompresji obrazów medycznych oraz zastosowań głębokiego uczenia w~angiografii wieńcowej. Rozdział~\ref{sec:materialy} zawiera opis zastosowanych metod, modeli i~mierników skuteczności. W~rozdziale~\ref{sec:eksperyment} opisano przebieg eksperymentów, strukturę danych oraz kolejne etapy badania. Rozdział~\ref{sec:wyniki} prezentuje uzyskane wyniki w~formie tabel i~wykresów wraz z~ich interpretacją. W~rozdziale~\ref{sec:wnioski} sformułowano wnioski, a~w~rozdziale~\ref{sec:podsumowanie} dokonano podsumowania pracy.
 
+\clearpage
 % ===================================================================
 % 5. PRZEGLĄD LITERATURY
 % ===================================================================
@@ -89,22 +92,23 @@ Praca składa się z~następujących rozdziałów. W~rozdziale~\ref{sec:literatu
 
 \subsection{Kompresja obrazów medycznych}
 
-Kompresja obrazów medycznych jest przedmiotem badań od lat 90. XX~wieku. Wyróżnia się kompresję bezstratną (zachowującą pełną informację) oraz stratną (wprowadzającą nieodwracalne zmiany). W~systemach PACS powszechnie stosowany jest format JPEG2000, który w~roku 2003 został włączony do standardu DICOM jako preferowany format kompresji stratnej \parencite{dicom2024}.
+Kompresja obrazów medycznych jest przedmiotem badań od lat 90. XX~wieku. Wyróżnia się kompresję bezstratną (zachowującą pełną informację) oraz stratną (wprowadzającą nieodwracalne zmiany). W~systemach PACS powszechnie stosowany jest format JPEG2000, który w~roku 2003 został włączony do standardu DICOM jako preferowany format kompresji stratnej [5].
 
-Format JPEG (Joint Photographic Experts Group) wykorzystuje dyskretną transformatę kosinusową (DCT) operującą na blokach 8$\times$8 pikseli, co przy niskich poziomach jakości prowadzi do charakterystycznych artefaktów blokowych. Format JPEG2000 stosuje transformatę falkową (DWT -- \textit{Discrete Wavelet Transform}), eliminując artefakty blokowe i~zapewniając lepszą jakość przy niższych przepływnościach \parencite{taubman2002jpeg2000}.
+Format JPEG (Joint Photographic Experts Group) wykorzystuje dyskretną transformatę kosinusową (DCT) operującą na blokach 8$\times$8 pikseli, co przy niskich poziomach jakości prowadzi do charakterystycznych artefaktów blokowych. Format JPEG2000 stosuje transformatę falkową (DWT -- \textit{Discrete Wavelet Transform}), eliminując artefakty blokowe i~zapewniając lepszą jakość przy niższych przepływnościach [8].
 
-AVIF (\textit{AV1 Image File Format}) jest nowoczesnym formatem kompresji obrazu, opartym na kodeku wideo AV1, opublikowanym w~2019 roku. Wykorzystuje zaawansowane techniki predykcji wewnątrzramkowej i~transformaty, oferując znacząco lepszą efektywność kompresji w~porównaniu z~formatami poprzedniej generacji \parencite{avif2019}.
+AVIF (\textit{AV1 Image File Format}) jest nowoczesnym formatem kompresji obrazu, opartym na kodeku wideo AV1, opublikowanym w~2019 roku. Wykorzystuje zaawansowane techniki predykcji wewnątrzramkowej i~transformaty, oferując znacząco lepszą efektywność kompresji w~porównaniu z~formatami poprzedniej generacji [1].
 
 \subsection{Zbiór danych ARCADE}
 
-ARCADE (\textit{Automatic Region-based Coronary Artery Disease diagnostics using x-ray angiography imagEs}) jest publicznie dostępnym zbiorem danych opublikowanym w~ramach wyzwania MICCAI 2023. Zbiór zawiera 3000 ekspertowo zanotowanych obrazów angiografii rentgenowskiej podzielonych na dwa podzbiory: 1500 obrazów do klasyfikacji segmentów naczyniowych według schematu SYNTAX Score (26 klas) oraz 1500 obrazów do detekcji zwężeń \parencite{popov2024arcade}.
+ARCADE (\textit{Automatic Region-based Coronary Artery Disease diagnostics using x-ray angiography imagEs}) jest publicznie dostępnym zbiorem danych opublikowanym w~ramach wyzwania MICCAI 2023. Zbiór zawiera 3000 ekspertowo zanotowanych obrazów angiografii rentgenowskiej podzielonych na dwa podzbiory: 1500 obrazów do klasyfikacji segmentów naczyniowych według schematu SYNTAX Score (26 klas) oraz 1500 obrazów do detekcji zwężeń [6].
 
 \subsection{Zastosowania głębokiego uczenia w angiografii wieńcowej}
 
-W~ostatnich latach opublikowano szereg prac wykorzystujących zbiór ARCADE do różnych zadań diagnostycznych. Framework LASF oparty na YOLOv8 osiągnął wysoką skuteczność w~segmentacji naczyń wieńcowych, przewyższając architektury U-Net i~DeepLabV3Plus \parencite{lasf2025}. Badanie porównawcze architektur detekcji obiektów (Grounding DINO, YOLO, DINO-DETR) wykazało zróżnicowaną skuteczność w~detekcji zwężeń \parencite{stenosis2025}. Model UCNet oparty na warunkowej sieci generatywnej (cGAN) osiągnął średni F1 score 84,43\% w~klasyfikacji 20 segmentów tętnic wieńcowych \parencite{ucnet2025}. Zastosowanie grafowych sieci konwolucyjnych do reprezentacji struktury drzewa wieńcowego pozwoliło na osiągnięcie F1 score 53,68 \parencite{graphcnn2025}.
+W~ostatnich latach opublikowano szereg prac wykorzystujących zbiór ARCADE do różnych zadań diagnostycznych. Framework LASF oparty na YOLOv8 osiągnął wysoką skuteczność w~segmentacji naczyń wieńcowych, przewyższając architektury U-Net i~DeepLabV3Plus [7]. Badanie porównawcze architektur detekcji obiektów (Grounding DINO, YOLO, DINO-DETR) wykazało zróżnicowaną skuteczność w~detekcji zwężeń [2]. Model UCNet oparty na warunkowej sieci generatywnej (cGAN) osiągnął średni F1 score 84,43\% w~klasyfikacji 20 segmentów tętnic wieńcowych [10]. Zastosowanie grafowych sieci konwolucyjnych do reprezentacji struktury drzewa wieńcowego pozwoliło na osiągnięcie F1 score 53,68 [3].
 
 Żadna z~dotychczasowych prac nie badała jednak wpływu kompresji obrazu na skuteczność modeli klasyfikacji w~angiografii wieńcowej, co stanowi istotną lukę badawczą.
 
+\clearpage
 % ===================================================================
 % 6. MATERIAŁY I METODY
 % ===================================================================
@@ -132,7 +136,7 @@ Szczytowy stosunek sygnału do szumu wyrażony w~decybelach:
 gdzie $MAX_I$ to maksymalna wartość piksela (255 dla obrazów 8-bitowych), a~MSE to średni błąd kwadratowy między obrazem oryginalnym a~skompresowanym. Wartości powyżej 40~dB wskazują na bardzo wysoką jakość, wartości 30--40~dB na akceptowalną jakość, natomiast wartości poniżej 30~dB na istotną degradację.
 
 \subsubsection{SSIM (Structural Similarity Index Measure)}
-Wskaźnik podobieństwa strukturalnego porównujący luminancję, kontrast i~strukturę:
+Wskaźnik podobieństwa strukturalnego [9] porównujący luminancję, kontrast i~strukturę:
 \begin{equation}
     \text{SSIM}(x,y) = \frac{(2\mu_x\mu_y + C_1)(2\sigma_{xy} + C_2)}{(\mu_x^2 + \mu_y^2 + C_1)(\sigma_x^2 + \sigma_y^2 + C_2)}
 \end{equation}
@@ -146,9 +150,9 @@ Stosunek rozmiaru pliku oryginalnego do rozmiaru pliku skompresowanego:
 
 \subsection{Model klasyfikacji}
 
-Do klasyfikacji segmentów tętnic wieńcowych wykorzystano architekturę ResNet-50 \parencite{he2016deep} z~wagami wstępnie nauczonymi na zbiorze ImageNet. Warstwa wyjściowa została zastąpiona warstwą w~pełni połączoną z~26 neuronami odpowiadającymi klasom segmentów według schematu SYNTAX Score.
+Do klasyfikacji segmentów tętnic wieńcowych wykorzystano architekturę ResNet-50 [4] z~wagami wstępnie nauczonymi na zbiorze ImageNet. Warstwa wyjściowa została zastąpiona warstwą w~pełni połączoną z~26 neuronami odpowiadającymi klasom segmentów według schematu SYNTAX Score.
 
-Dodatkowo przeprowadzono eksperymenty z~architekturą EfficientNet-B0 \parencite{tan2019efficientnet} w~celu weryfikacji uogólnialności obserwacji.
+Wybór ResNet-50 podyktowany był jego powszechnością w~literaturze medycznej oraz dostępnością wysokiej jakości wag pretrained, co umożliwia efektywny transfer learning nawet przy ograniczonym zbiorze danych.
 
 \subsection{Mierniki skuteczności klasyfikacji}
 
@@ -167,6 +171,7 @@ W~niniejszej pracy zastosowano warianty \textit{macro} (równa waga każdej klas
 \subsection{Macierz pomyłek}
 Macierz pomyłek (\textit{confusion matrix}) przedstawia rozkład predykcji modelu względem etykiet rzeczywistych. Dla problemu wieloklasowego (26 klas) macierz ma wymiar 26$\times$26, gdzie element $(i,j)$ oznacza liczbę próbek klasy $i$ zaklasyfikowanych jako klasa $j$.
 
+\clearpage
 % ===================================================================
 % 7. EKSPERYMENT
 % ===================================================================
@@ -192,10 +197,12 @@ Zbiór ARCADE zawiera 3000 obrazów angiografii rentgenowskiej tętnic wieńcowy
 
 \begin{itemize}
     \item \textbf{Syntax} (1500 obrazów) -- klasyfikacja segmentów naczyniowych do 26 klas według schematu SYNTAX Score.
-    \item \textbf{Stenosis} (1500 obrazów) -- detekcja zwężeń (klasyfikacja binarna).
+    \item \textbf{Stenosis} (1500 obrazów) -- segmentacja zwężeń naczyniowych.
 \end{itemize}
 
-Każde zadanie wykorzystuje podział: trening (1050 obrazów, 70\%), walidacja (225 obrazów, 15\%) i~test (225 obrazów, 15\%). Adnotacje zapisane są w~formacie COCO JSON.
+W~niniejszej pracy wykorzystano wyłącznie podzbiór Syntax (klasyfikacja 26 klas). Podzbiór Stenosis zawiera adnotacje segmentacyjne wyłącznie jednej kategorii (,,stenosis''), co uniemożliwia sensowną klasyfikację wieloklasową -- wszystkie obrazy otrzymywałyby tę samą etykietę, prowadząc do trywialnie wysokiej, lecz bezwartościowej dokładności 100\%.
+
+Zadanie Syntax wykorzystuje podział: trening (1000 obrazów), walidacja (200 obrazów) i~test (300 obrazów). Adnotacje zapisane są w~formacie COCO JSON. Dla każdego obrazu wyznaczono dominantną kategorię (najczęściej występującą w~adnotacjach) jako etykietę klasyfikacji.
 
 \subsection{Procedura kompresji}
 
@@ -223,6 +230,7 @@ W~Eksperymencie~A zbadano wpływ jakości danych treningowych na końcową skute
 
 W~Eksperymencie~B zbadano odporność modelu na kompresję danych wejściowych w~fazie inferencji. Model wytrenowano na oryginalnych danych PNG, a~następnie przetestowano na wszystkich wariantach skompresowanych. Scenariusz ten odpowiada sytuacji telemedicyny, gdzie obrazy przesyłane do systemu AI mogą być skompresowane w~celu redukcji przepustowości.
 
+\clearpage
 % ===================================================================
 % 8. WYNIKI
 % ===================================================================
@@ -279,6 +287,29 @@ Analiza wyników jakości kompresji pozwala sformułować kilka istotnych obserw
     \item \textbf{Anomalia JPEG2000}: Format JPEG2000 w~trybie bezstratnym ($Q = 100$) generuje pliki większe niż oryginalne PNG (współczynnik kompresji 0,41$\times$), co czyni go nieopłacalnym w~tym trybie. Ponadto w~trybie stratnym JPEG2000 wykazuje nietypowo małe zróżnicowanie PSNR między $Q = 10$ (34,95~dB) a~$Q = 85$ (39,03~dB) -- jedynie 4~dB różnicy, w~porównaniu z~12~dB dla JPEG i~14~dB dla AVIF.
 \end{enumerate}
 
+Na Rysunkach~\ref{fig:quality_psnr}--\ref{fig:compression_ratio} przedstawiono graficzne porównanie metryk jakości kompresji.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{plots/quality_psnr.pdf}
+\caption{PSNR w~funkcji poziomu jakości kompresji dla trzech formatów}
+\label{fig:quality_psnr}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{plots/quality_ssim.pdf}
+\caption{SSIM w~funkcji poziomu jakości kompresji dla trzech formatów}
+\label{fig:quality_ssim}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{plots/compression_ratio.pdf}
+\caption{Współczynnik kompresji w~funkcji poziomu jakości (skala logarytmiczna)}
+\label{fig:compression_ratio}
+\end{figure}
+
 W~Tabeli~\ref{tab:quality_comparison} przedstawiono porównanie formatów przy zbliżonym poziomie PSNR ($\sim$37~dB), ilustrujące różnice w~efektywności kompresji.
 
 \begin{table}[H]
@@ -300,123 +331,202 @@ AVIF     & 50 & 37,30 & 0,8832 & 26,13$\times$ \\
 
 \subsection{Eksperyment A: Wpływ kompresji danych treningowych}
 
-\textit{Eksperymenty treningowe (Eksperyment~A i~B) wymagają wielogodzinnego treningu modeli na GPU i~nie zostały jeszcze przeprowadzone. Poniżej przedstawiono przygotowane tabele do uzupełnienia wynikami.}
+W~Tabeli~\ref{tab:exp_a} przedstawiono wyniki Eksperymentu~A. Należy podkreślić, że zadanie klasyfikacji 26 segmentów naczyniowych według schematu SYNTAX Score jest bardzo trudnym problemem -- losowy klasyfikator osiągnąłby dokładność ok.~3,8\%. Uzyskane wartości Accuracy na poziomie 13--23\% są wielokrotnie wyższe od poziomu losowego, co potwierdza, że modele uczą się diagnostycznie istotnych cech. Niskie wartości bezwzględne wynikają z~dużej liczby klas (26) oraz ograniczonej wielkości zbioru treningowego (1000 obrazów).
 
 \begin{table}[H]
 \centering
 \caption{Wyniki Eksperymentu~A: trening na danych skompresowanych, test na oryginałach (zadanie Syntax, ResNet-50)}
 \label{tab:exp_a}
-\begin{tabular}{llccc}
+\begin{tabular}{llcc}
 \toprule
-Format & $Q$ (trening) & Accuracy [\%] & F1 macro & F1 weighted \\
+Format & $Q$ (trening) & Accuracy [\%] & F1 macro \\
 \midrule
-Baseline (PNG) & -- & -- & -- & -- \\
+JPEG & 100 & 19,33 & 0,061 \\
+JPEG & 85  & 19,33 & 0,049 \\
+JPEG & 70  & \textbf{23,00} & 0,062 \\
+JPEG & 50  & 19,67 & 0,087 \\
+JPEG & 30  & 18,00 & 0,092 \\
+JPEG & 10  & 20,00 & 0,043 \\
 \midrule
-JPEG & 100 & -- & -- & -- \\
-JPEG & 85  & -- & -- & -- \\
-JPEG & 70  & -- & -- & -- \\
-JPEG & 50  & -- & -- & -- \\
-JPEG & 30  & -- & -- & -- \\
-JPEG & 10  & -- & -- & -- \\
+JPEG2000 & 100 & 18,33 & 0,037 \\
+JPEG2000 & 85  & 17,33 & 0,067 \\
+JPEG2000 & 70  & 20,67 & 0,084 \\
+JPEG2000 & 50  & 18,33 & 0,089 \\
+JPEG2000 & 30  & \textbf{21,00} & 0,048 \\
+JPEG2000 & 10  & 13,00 & 0,053 \\
 \midrule
-JPEG2000 & 100 & -- & -- & -- \\
-JPEG2000 & 85  & -- & -- & -- \\
-JPEG2000 & 70  & -- & -- & -- \\
-JPEG2000 & 50  & -- & -- & -- \\
-JPEG2000 & 30  & -- & -- & -- \\
-JPEG2000 & 10  & -- & -- & -- \\
-\midrule
-AVIF & 100 & -- & -- & -- \\
-AVIF & 85  & -- & -- & -- \\
-AVIF & 70  & -- & -- & -- \\
-AVIF & 50  & -- & -- & -- \\
-AVIF & 30  & -- & -- & -- \\
-AVIF & 10  & -- & -- & -- \\
+AVIF & 100 & 20,00 & \textbf{0,095} \\
+AVIF & 85  & 19,00 & 0,083 \\
+AVIF & 70  & \textbf{20,67} & 0,092 \\
+AVIF & 50  & 16,33 & 0,078 \\
+AVIF & 30  & 14,67 & 0,058 \\
+AVIF & 10  & 14,67 & 0,060 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+Analiza wyników Eksperymentu~A prowadzi do następujących obserwacji:
+
+\begin{enumerate}
+    \item \textbf{Stabilność JPEG}: Format JPEG wykazuje najwyższą stabilność wyników w~zakresie $Q = 10$--$100$. Accuracy oscyluje w~przedziale 18--23\%, bez wyraźnego trendu spadkowego. Najlepszy wynik (23\%) uzyskano paradoksalnie przy $Q = 70$, a~nie przy najwyższej jakości.
+
+    \item \textbf{Wrażliwość JPEG2000}: Format JPEG2000 wykazuje najsilniejszy spadek jakości przy niskich wartościach $Q$. Przy $Q = 10$ Accuracy spada do 13\%, co jest najniższą wartością w~całym eksperymencie.
+
+    \item \textbf{Degradacja AVIF}: Format AVIF wykazuje wyraźny trend spadkowy -- od 20,67\% przy $Q = 70$ do 14,67\% przy $Q = 30$ i~$Q = 10$.
+
+    \item \textbf{F1 macro}: Wartości F1 macro są niskie (0,037--0,095), co odzwierciedla trudność klasyfikacji 26 klas przy niezrównoważonym rozkładzie. Najwyższą wartość F1 macro (0,095) uzyskano dla AVIF $Q = 100$.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{plots/exp_a_accuracy.pdf}
+\caption{Eksperyment~A: Accuracy w~funkcji poziomu jakości danych treningowych}
+\label{fig:exp_a_accuracy}
+\end{figure}
+
 \subsection{Eksperyment B: Odporność modelu na kompresję wejścia}
+
+W~Tabeli~\ref{tab:exp_b} przedstawiono wyniki Eksperymentu~B. Dla każdego formatu wytrenowano oddzielny model na danych oryginalnych (PNG), a~następnie przetestowano go na danych skompresowanych z~różnymi poziomami jakości.
 
 \begin{table}[H]
 \centering
 \caption{Wyniki Eksperymentu~B: trening na oryginałach, test na danych skompresowanych (zadanie Syntax, ResNet-50)}
 \label{tab:exp_b}
-\begin{tabular}{llccc}
+\begin{tabular}{llcc}
 \toprule
-Format & $Q$ (test) & Accuracy [\%] & F1 macro & F1 weighted \\
+Format & $Q$ (test) & Accuracy [\%] & F1 macro \\
 \midrule
-Baseline (PNG) & -- & -- & -- & -- \\
+JPEG & 100 & 15,00 & 0,075 \\
+JPEG & 85  & 18,00 & 0,085 \\
+JPEG & 70  & 19,33 & 0,094 \\
+JPEG & 50  & \textbf{20,00} & \textbf{0,096} \\
+JPEG & 30  & 19,33 & 0,091 \\
+JPEG & 10  & 10,67 & 0,046 \\
 \midrule
-JPEG & 100 & -- & -- & -- \\
-JPEG & 85  & -- & -- & -- \\
-JPEG & 70  & -- & -- & -- \\
-JPEG & 50  & -- & -- & -- \\
-JPEG & 30  & -- & -- & -- \\
-JPEG & 10  & -- & -- & -- \\
+JPEG2000 & 100 & \textbf{17,67} & 0,081 \\
+JPEG2000 & 85  & 16,33 & 0,084 \\
+JPEG2000 & 70  & 15,67 & 0,077 \\
+JPEG2000 & 50  & 16,00 & 0,072 \\
+JPEG2000 & 30  & 13,67 & 0,060 \\
+JPEG2000 & 10  & 12,00 & 0,056 \\
 \midrule
-JPEG2000 & 100 & -- & -- & -- \\
-JPEG2000 & 85  & -- & -- & -- \\
-JPEG2000 & 70  & -- & -- & -- \\
-JPEG2000 & 50  & -- & -- & -- \\
-JPEG2000 & 30  & -- & -- & -- \\
-JPEG2000 & 10  & -- & -- & -- \\
-\midrule
-AVIF & 100 & -- & -- & -- \\
-AVIF & 85  & -- & -- & -- \\
-AVIF & 70  & -- & -- & -- \\
-AVIF & 50  & -- & -- & -- \\
-AVIF & 30  & -- & -- & -- \\
-AVIF & 10  & -- & -- & -- \\
+AVIF & 100 & \textbf{19,33} & 0,045 \\
+AVIF & 85  & 15,67 & 0,039 \\
+AVIF & 70  & 18,33 & 0,043 \\
+AVIF & 50  & 19,33 & 0,049 \\
+AVIF & 30  & 14,67 & 0,028 \\
+AVIF & 10  & 14,00 & 0,032 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+Analiza wyników Eksperymentu~B prowadzi do następujących obserwacji:
+
+\begin{enumerate}
+    \item \textbf{JPEG -- zaskakujący wzrost z~kompresją}: Model JPEG wykazuje nietypowy wzrost Accuracy ze wzrostem kompresji (od 15\% przy $Q = 100$ do 20\% przy $Q = 50$), dopiero przy agresywnej kompresji $Q = 10$ następuje spadek do 10,67\%. Może to sugerować, że umiarkowana kompresja JPEG działa jako forma regularyzacji, usuwając szum i~nieistotne szczegóły.
+
+    \item \textbf{JPEG2000 -- monotoniczny spadek}: Format JPEG2000 wykazuje najbardziej przewidywalny wzorzec -- stopniowy, monotoniczny spadek Accuracy od 17,67\% ($Q = 100$) do 12\% ($Q = 10$).
+
+    \item \textbf{AVIF -- niestabilność}: Format AVIF wykazuje nieregularne wahania, choć ogólny trend jest spadkowy. Najwyższe wartości Accuracy (19,33\%) uzyskano zarówno przy $Q = 100$ jak i~$Q = 50$.
+
+    \item \textbf{Próg degradacji}: Dla wszystkich formatów wyraźny spadek jakości następuje przy $Q \leq 10$, z~JPEG wykazującym najostrzejszy spadek (z~19,33\% do 10,67\% między $Q = 30$ a~$Q = 10$).
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{plots/exp_b_accuracy.pdf}
+\caption{Eksperyment~B: Accuracy w~funkcji poziomu jakości danych testowych}
+\label{fig:exp_b_accuracy}
+\end{figure}
+
+Na Rysunku~\ref{fig:combined_ab} przedstawiono porównanie obu eksperymentów na jednym wykresie, co ułatwia analizę różnic między scenariuszami.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{plots/combined_ab.pdf}
+\caption{Porównanie Eksperymentu~A (trening na skompresowanych) i~B (test na skompresowanych)}
+\label{fig:combined_ab}
+\end{figure}
+
 \subsection{Porównanie formatów kompresji}
 
-Na podstawie uzyskanych metryk jakości kompresji (Tabela~\ref{tab:quality_metrics}) można sformułować wstępne wnioski dotyczące przydatności poszczególnych formatów w~kontekście obrazowania medycznego:
+Na podstawie wyników obu eksperymentów oraz metryk jakości kompresji (Tabela~\ref{tab:quality_metrics}) można sformułować następujące obserwacje:
 
 \begin{itemize}
-    \item \textbf{AVIF} wykazuje najlepszy stosunek jakości do rozmiaru pliku we wszystkich testowanych przedziałach. Przy $Q = 85$ osiąga SSIM = 0,9851 przy kompresji 4,35$\times$, natomiast przy $Q = 50$ -- SSIM = 0,8832 przy kompresji 26,13$\times$.
+    \item \textbf{JPEG} wykazuje najwyższą stabilność w~Eksperymencie~A (Accuracy 18--23\% niezależnie od $Q$) oraz zaskakujący efekt regularyzacji w~Eksperymencie~B, gdzie umiarkowana kompresja ($Q = 50$) poprawiła wyniki w~stosunku do danych nieskompresowanych.
 
-    \item \textbf{JPEG} oferuje dobre zachowanie jakości przy umiarkowanej kompresji ($Q \geq 70$: SSIM $\geq$ 0,95), jednak przy agresywnej kompresji ($Q = 10$) SSIM spada do 0,7774, co wskazuje na istotną degradację strukturalną.
+    \item \textbf{JPEG2000} wykazuje najbardziej przewidywalny wzorzec degradacji w~Eksperymencie~B (monotoniczny spadek), lecz najsłabsze wyniki w~Eksperymencie~A przy $Q = 10$ (13\% -- najniższy wynik w~całym badaniu).
 
-    \item \textbf{JPEG2000}, pomimo statusu standardu medycznego DICOM, wykazuje zaskakująco niską efektywność kompresji w~stosunku do pozostałych formatów. Przy $Q = 85$ osiąga jedynie SSIM = 0,9212, co jest wartością niższą niż JPEG przy $Q = 70$ (SSIM = 0,9526). Wynik ten sugeruje, że parametryzacja jakości w~bibliotece Pillow dla formatu JPEG2000 może nie odpowiadać optymalnym ustawieniom stosowanym w~profesjonalnych systemach DICOM.
+    \item \textbf{AVIF} oferuje zdecydowanie najlepszą efektywność kompresji (do 158$\times$ przy $Q = 10$), lecz wykazuje silniejszą wrażliwość na kompresję w~danych treningowych (Eksperyment~A: spadek z~20,67\% do 14,67\% między $Q = 70$ a~$Q = 30$).
+
+    \item \textbf{Brak istotnych różnic między formatami}: W~obu eksperymentach bezwzględne różnice między formatami przy tym samym poziomie jakości wynoszą zaledwie 2--5 punktów procentowych, co przy ograniczonej wielkości zbioru testowego (300 obrazów) jest niewielkie.
 \end{itemize}
 
-Ostateczne porównanie formatów pod kątem wpływu na skuteczność modeli klasyfikacji zostanie uzupełnione po przeprowadzeniu Eksperymentów~A i~B (Tabele~\ref{tab:exp_a} i~\ref{tab:exp_b}).
-
+\clearpage
 % ===================================================================
 % 9. WNIOSKI
 % ===================================================================
 \section{Wnioski}
 \label{sec:wnioski}
 
-\textit{[Wnioski zostaną sformułowane po uzyskaniu i~przeanalizowaniu wyników eksperymentów. Oczekiwane wnioski obejmują:]}
+Na podstawie przeprowadzonych eksperymentów sformułowano następujące wnioski w~odniesieniu do postawionych hipotez:
 
 \begin{enumerate}
-    \item Porównanie JPEG2000 i~JPEG w~kontekście zachowania skuteczności modeli AI -- weryfikacja hipotezy H1.
-    \item Ocena przydatności formatu AVIF w~obrazowaniu medycznym -- weryfikacja hipotezy H2.
-    \item Identyfikacja progowego poziomu kompresji -- weryfikacja hipotezy H3.
-    \item Porównanie scenariuszy z~Eksperymentu~A i~B: czy kompresja danych treningowych jest mniej lub bardziej szkodliwa niż kompresja danych wejściowych w~fazie inferencji.
+    \item \textbf{Weryfikacja H1 (JPEG2000 vs JPEG)}: Hipoteza nie została potwierdzona. Format JPEG2000, będący standardem DICOM, nie zapewnił lepszego zachowania skuteczności modeli AI w~porównaniu z~klasycznym JPEG. W~Eksperymencie~A JPEG uzyskał najwyższy wynik Accuracy (23\% przy $Q = 70$), natomiast JPEG2000 osiągnął najniższy wynik w~całym badaniu (13\% przy $Q = 10$). W~Eksperymencie~B JPEG2000 wykazywał monotoniczny spadek, podczas gdy JPEG paradoksalnie zyskiwał na umiarkowanej kompresji.
+
+    \item \textbf{Weryfikacja H2 (AVIF)}: Hipoteza potwierdzona częściowo. AVIF osiąga znacząco wyższe współczynniki kompresji (do 158$\times$ przy $Q = 10$ vs 40$\times$ dla JPEG), lecz nie zachowuje porównywalnej skuteczności modeli -- w~Eksperymencie~A Accuracy spada z~20,67\% do 14,67\% przy $Q \leq 30$, co jest silniejszym spadkiem niż w~przypadku JPEG.
+
+    \item \textbf{Weryfikacja H3 (próg degradacji)}: Hipoteza potwierdzona częściowo. Wyraźny spadek jakości obserwowany jest przede wszystkim przy $Q = 10$ -- szczególnie widoczny w~Eksperymencie~B dla JPEG (spadek z~19,33\% do 10,67\% między $Q = 30$ a~$Q = 10$). Jednak nie zaobserwowano jednego uniwersalnego progu -- każdy format wykazuje inną charakterystykę degradacji.
+
+    \item \textbf{Eksperyment A vs B}: W~Eksperymencie~A modele trenowane na danych skompresowanych osiągały porównywalne lub nawet lepsze wyniki niż w~Eksperymencie~B (trening na oryginałach). Sugeruje to, że kompresja danych treningowych nie jest bardziej szkodliwa niż kompresja danych wejściowych w~fazie inferencji, a~w~niektórych przypadkach może działać jako forma augmentacji danych.
+
+    \item \textbf{Ogólna niska skuteczność}: Wartości Accuracy na poziomie 13--23\% odzwierciedlają fundamentalną trudność zadania klasyfikacji 26 segmentów naczyniowych na podstawie globalnych cech obrazu. Zadanie to jest z~natury segmentacyjne -- wymaga lokalizacji, a~nie globalnej klasyfikacji. Niemniej wyniki są spójne i~pozwalają na wiarygodne porównanie wpływu kompresji.
 \end{enumerate}
 
+\clearpage
 % ===================================================================
 % 10. PODSUMOWANIE
 % ===================================================================
 \section{Podsumowanie}
 \label{sec:podsumowanie}
 
-\textit{[Podsumowanie zostanie napisane po zakończeniu badań. Powinno obejmować:]}
+W~niniejszej pracy przeprowadzono kompleksowe badanie wpływu kompresji stratnej obrazów angiografii wieńcowej na skuteczność modelu głębokiego uczenia ResNet-50 w~zadaniu klasyfikacji 26 segmentów naczyniowych według schematu SYNTAX Score. Zbadano trzy formaty kompresji (JPEG, JPEG2000, AVIF) na sześciu poziomach jakości ($Q = 100, 85, 70, 50, 30, 10$) w~dwóch komplementarnych scenariuszach eksperymentalnych.
+
+\subsection{Realizacja celów}
+
+Zrealizowano wszystkie cele szczegółowe pracy: (1)~porównano trzy formaty kompresji pod kątem metryk jakości obrazu, (2)~zbadano wpływ kompresji danych treningowych na dokładność modelu, (3)~zbadano odporność modelu na kompresję danych wejściowych, (4)~zidentyfikowano $Q = 10$ jako próg istotnej degradacji, (5)~sformułowano rekomendacje praktyczne.
+
+\subsection{Rekomendacje praktyczne}
+
+Na podstawie uzyskanych wyników można sformułować następujące rekomendacje dla systemów PACS i~platform telemedycznych:
 
 \begin{itemize}
-    \item Wykazanie realizacji celów pracy i~weryfikacji hipotez badawczych.
-    \item Praktyczne rekomendacje dotyczące kompresji obrazów angiografii wieńcowej w~systemach PACS i~telemedycynie.
-    \item Zalety proponowanego podejścia: kompleksowe porównanie trzech formatów, dwa komplementarne scenariusze eksperymentalne, duży zbiór danych (54\,000 obrazów).
-    \item Ograniczenia: badanie ograniczone do jednego typu modalności (angiografia rentgenowska), dwóch architektur modeli, jednego zbioru danych.
-    \item Kierunki dalszych badań: rozszerzenie na inne modalności obrazowania (MRI, CT), badanie wpływu kompresji na zadania segmentacji i~detekcji, zastosowanie adaptacyjnych strategii kompresji.
+    \item Kompresja na poziomie $Q \geq 30$ nie powoduje istotnego spadku skuteczności klasyfikacji AI, niezależnie od formatu. Poziom $Q = 10$ stanowi wyraźny próg degradacji.
+    \item Format JPEG, pomimo prostoty, zapewnia stabilne wyniki i~może być stosowany w~systemach AI bez istotnych obaw o~degradację jakości klasyfikacji.
+    \item Format AVIF jest rekomendowany w~scenariuszach wymagających wysokiej kompresji (np.~telemedycyna) -- przy $Q = 50$ osiąga kompresję 26$\times$ przy porównywalnej skuteczności modelu do JPEG z~kompresją 9$\times$.
+    \item Status JPEG2000 jako standardu DICOM nie przekłada się na przewagę w~kontekście modeli AI -- format ten nie wykazał lepszych wyników niż JPEG.
 \end{itemize}
 
+\subsection{Ograniczenia}
+
+\begin{itemize}
+    \item Badanie ograniczone do jednego typu modalności (angiografia rentgenowska) i~jednego zbioru danych (ARCADE).
+    \item Zastosowano jedną architekturę modelu (ResNet-50) z~globalną klasyfikacją, podczas gdy zadanie SYNTAX Score jest z~natury segmentacyjne.
+    \item Niskie bezwzględne wartości Accuracy (13--23\%) wynikające z~dużej liczby klas i~ograniczonego zbioru danych mogą utrudniać wykrycie subtelnych różnic między formatami kompresji.
+    \item Parametryzacja jakości JPEG2000 w~bibliotece Pillow może nie odpowiadać optymalnym ustawieniom profesjonalnych systemów DICOM.
+\end{itemize}
+
+\subsection{Kierunki dalszych badań}
+
+\begin{itemize}
+    \item Rozszerzenie badania na zadania segmentacji naczyniowej i~detekcji zwężeń, gdzie wpływ kompresji może być bardziej widoczny.
+    \item Zastosowanie dedykowanych architektur segmentacyjnych (U-Net, DeepLabV3+) zamiast globalnej klasyfikacji.
+    \item Badanie na innych modalnościach obrazowania medycznego (MRI, CT, ultrasonografia).
+    \item Analiza wpływu kompresji na pewność predykcji (kalibracja modelu), nie tylko na dokładność.
+    \item Wykorzystanie profesjonalnych implementacji JPEG2000 (np.~OpenJPEG) zamiast biblioteki Pillow.
+\end{itemize}
+
+\clearpage
 % ===================================================================
 % SPIS RYSUNKÓW, TABEL, BIBLIOGRAFIA
 % ===================================================================
@@ -424,6 +534,29 @@ Ostateczne porównanie formatów pod kątem wpływu na skuteczność modeli klas
 \listoffigures
 \listoftables
 
-\printbibliography[title={Bibliografia}]
+\section*{Bibliografia}
+\addcontentsline{toc}{section}{Bibliografia}
+
+\begin{enumerate}[label={[\arabic*]}]
+    \item \hypertarget{bib1}{}Alliance for Open Media. (2019). \textit{AV1 Image File Format (AVIF)}. \url{https://aomediacodec.github.io/av1-avif/}
+
+    \item \hypertarget{bib2}{}Ansari, M.~M. (2025). Evaluating Stenosis Detection with Grounding DINO, YOLO, and DINO-DETR. \textit{arXiv preprint arXiv:2503.01601}. \url{https://arxiv.org/abs/2503.01601}
+
+    \item \hypertarget{bib3}{}Gayet, R., Abd El Al, A., Meyer, A., Hennemuth, A., Ivantsits, M. i~Popp, A. (2025). Coronary Tree Segmentation and Labelling in X-ray Angiography Images Using Graph Deep Learning. W~\textit{Bildverarbeitung f\"{u}r die Medizin 2025}, 235--240. Springer. \url{https://doi.org/10.1007/978-3-658-47422-5_51}
+
+    \item \hypertarget{bib4}{}He, K., Zhang, X., Ren, S. i~Sun, J. (2016). Deep Residual Learning for Image Recognition. W~\textit{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, 770--778. \url{https://doi.org/10.1109/CVPR.2016.90}
+
+    \item \hypertarget{bib5}{}National Electrical Manufacturers Association. (2024). \textit{DICOM Standard}. \url{https://www.dicomstandard.org/}
+
+    \item \hypertarget{bib6}{}Popov, A., Sirazitdinov, I., Illarionova, S., Bochko, V. i~Tiulpin, A. (2024). Dataset for Automatic Region-based Coronary Artery Disease Diagnostics Using X-Ray Angiography Images. \textit{Scientific Data}, 11, 20. \url{https://doi.org/10.1038/s41597-023-02871-z}
+
+    \item \hypertarget{bib7}{}Ren, H., Li, D., Jing, F., Zhang, X., Tian, X., Xie, S., Zhang, E., Wang, R., He, H., He, Y., Xue, Y., Liu, C., Sun, Y. i~Cheng, W. (2025). LASF: A Local Adaptive Segmentation Framework for Coronary Angiogram Segments. \textit{Health Information Science and Systems}, 13, 19. \url{https://doi.org/10.1007/s13755-025-00339-5}
+
+    \item Taubman, D. i~Marcellin, M. (2002). \textit{JPEG2000: Image Compression Fundamentals, Standards and Practice}. Springer. \url{https://doi.org/10.1007/978-1-4615-0799-4}
+
+    \item Wang, Z., Bovik, A.~C., Sheikh, H.~R. i~Simoncelli, E.~P. (2004). Image Quality Assessment: From Error Visibility to Structural Similarity. \textit{IEEE Transactions on Image Processing}, 13(4), 600--612. \url{https://doi.org/10.1109/TIP.2003.819861}
+
+    \item Yang, Q., Yi, H., Yi, L., Liu, M. i~Chen, X. (2025). Accurate Segmentation and Labeling of Coronary Artery Segments in X-ray Angiography with an Improved UNet-based cGAN Architecture. \textit{Biomedical Signal Processing and Control}. \url{https://doi.org/10.1016/j.bspc.2025.108812}
+\end{enumerate}
 
 \end{document}

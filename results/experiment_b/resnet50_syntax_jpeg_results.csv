@@ -1,0 +1,7 @@
+experiment_id,format,train_quality,test_quality,test_accuracy,test_f1_macro
+resnet50_syntax_baseline_20260129_132136,jpeg,baseline,100,0.15,0.07452860575125515
+resnet50_syntax_baseline_20260129_132136,jpeg,baseline,85,0.18,0.08467902835213474
+resnet50_syntax_baseline_20260129_132136,jpeg,baseline,70,0.19333333333333333,0.0940906382028167
+resnet50_syntax_baseline_20260129_132136,jpeg,baseline,50,0.2,0.09630402843069881
+resnet50_syntax_baseline_20260129_132136,jpeg,baseline,30,0.19333333333333333,0.09100573666594226
+resnet50_syntax_baseline_20260129_132136,jpeg,baseline,10,0.10666666666666667,0.04571345833174221

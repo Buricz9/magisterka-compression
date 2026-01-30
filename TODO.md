@@ -5,7 +5,7 @@
 **Obsługiwane formaty:** JPEG, JPEG2000, AVIF
 
 ---
-
+test
 ## ✅ GOTOWE (Przygotowanie)
 
 - [x] Pobranie datasetu ARCADE (3000 obrazów)

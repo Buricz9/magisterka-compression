@@ -39,12 +39,12 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size, d
         experiment_id = training_results['experiment_id']
         checkpoint_path = config.get_checkpoint_path(experiment_id) / "best_model.pth"
 
-        num_classes = config.NUM_CLASSES[task]
+        test_loader = get_dataloader(task, 'test', quality=None, format=None, batch_size=batch_size, num_workers=0)
+        num_classes = test_loader.dataset.num_classes
         model = create_model(model_name, num_classes).to(device)
         checkpoint = torch.load(checkpoint_path, map_location=device)
         model.load_state_dict(checkpoint['model_state_dict'])
 
-        test_loader = get_dataloader(task, 'test', quality=None, format=None, batch_size=batch_size, num_workers=0)
         test_metrics = evaluate_model(model, test_loader, device)
 
         results.append({

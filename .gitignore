@@ -45,3 +45,6 @@ desktop.ini
 *.tmp
 *.bak
 *.log
+
+# Claude Code agents
+.claude/agents/

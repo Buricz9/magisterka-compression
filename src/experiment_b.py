@@ -14,6 +14,9 @@ from dataset import get_dataloader
 
 def run_experiment_b(model_name, task, quality_levels, num_epochs, batch_size, device, format='jpeg'):
     """Run Experiment B: train on baseline, test on compressed."""
+    # Set seed for reproducibility
+    config.set_seed()
+
     # Train on baseline
     print(f"\n{'='*80}")
     print(f"Training on baseline")
@@ -36,17 +39,26 @@ def run_experiment_b(model_name, task, quality_levels, num_epochs, batch_size, d
     experiment_id = training_results['experiment_id']
     checkpoint_path = config.get_checkpoint_path(experiment_id) / "best_model.pth"
 
-    temp_loader = get_dataloader(task, 'test', quality=None, format=None, batch_size=batch_size, num_workers=0)
-    num_classes = temp_loader.dataset.num_classes
-    model = create_model(model_name, num_classes).to(device)
-    checkpoint = torch.load(checkpoint_path, map_location=device)
-    model.load_state_dict(checkpoint['model_state_dict'])
+    try:
+        temp_loader = get_dataloader(task, 'test', quality=None, format=None,
+                                    batch_size=batch_size, num_workers=config.NUM_WORKERS)
+        num_classes = temp_loader.dataset.num_classes
+        model = create_model(model_name, num_classes).to(device)
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+    except FileNotFoundError as e:
+        print(f"Error: Checkpoint not found: {checkpoint_path}")
+        raise
+    except RuntimeError as e:
+        print(f"Error loading checkpoint: {e}")
+        raise
 
     # Test on different quality levels
     results = []
     for quality in quality_levels:
         print(f"\nTesting on {format.upper()} Q={quality}")
-        test_loader = get_dataloader(task, 'test', quality=quality, format=format, batch_size=batch_size, num_workers=0)
+        test_loader = get_dataloader(task, 'test', quality=quality, format=format,
+                                    batch_size=batch_size, num_workers=config.NUM_WORKERS)
         test_metrics = evaluate_model(model, test_loader, device)
 
         results.append({
@@ -71,12 +83,12 @@ def run_experiment_b(model_name, task, quality_levels, num_epochs, batch_size, d
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="resnet50")
+    parser.add_argument("--model", type=str, default="resnet50", choices=config.SUPPORTED_MODELS)
     parser.add_argument("--task", type=str, default="syntax", choices=["syntax", "stenosis"])
     parser.add_argument("--format", type=str, default="jpeg", choices=["jpeg", "jpeg2000", "avif"],
                        help="Compression format")
-    parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--epochs", type=int, default=config.NUM_EPOCHS)
+    parser.add_argument("--batch-size", type=int, default=config.BATCH_SIZE)
     parser.add_argument("--mvp", action="store_true")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
@@ -89,7 +101,7 @@ def main():
         quality_levels=quality_levels,
         num_epochs=args.epochs,
         batch_size=args.batch_size,
-        device=args.device,
+        device=torch.device(args.device),
         format=args.format
     )
 

@@ -21,16 +21,21 @@ def load_image_as_array(image_path):
 
 
 def calculate_metrics(baseline_path, compressed_path):
-    """Calculate quality metrics between baseline and compressed image."""
+    """Calculate quality metrics between baseline and compressed image.
+
+    Note: Images must have the same dimensions for accurate PSNR/SSIM.
+    Resize would change pixel values and invalidate the metrics.
+    """
     try:
         baseline = load_image_as_array(baseline_path)
         compressed = load_image_as_array(compressed_path)
 
+        # Check dimensions - do NOT resize as it changes pixel values
+        # and invalidates PSNR/SSIM measurements
         if baseline.shape != compressed.shape:
-            compressed_img = Image.open(compressed_path).resize(
-                (baseline.shape[1], baseline.shape[0]), Image.LANCZOS
-            )
-            compressed = np.array(compressed_img)
+            print(f"Warning: Dimension mismatch for {baseline_path.name}: "
+                  f"{baseline.shape} vs {compressed.shape}. Skipping.")
+            return None
 
         psnr_value = psnr(baseline, compressed, data_range=255)
         ssim_value = ssim(baseline, compressed, data_range=255, channel_axis=2, win_size=7)

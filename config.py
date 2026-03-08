@@ -1,4 +1,8 @@
 """Configuration for compression experiments on ARCADE dataset."""
+import os
+import random
+import numpy as np
+import torch
 from pathlib import Path
 
 # Paths
@@ -9,6 +13,7 @@ COMPRESSED_ROOT = DATASET_ROOT / "compressed"
 MODELS_ROOT = PROJECT_ROOT / "models"
 RESULTS_ROOT = PROJECT_ROOT / "results"
 LOGS_ROOT = PROJECT_ROOT / "logs"
+PLOTS_ROOT = PROJECT_ROOT / "plots"
 
 # Dataset
 TASKS = ["syntax", "stenosis"]
@@ -23,8 +28,13 @@ DEFAULT_FORMAT = "jpeg"
 QUALITY_LEVELS = [100, 95, 90, 85, 80, 75, 70, 60, 50, 40, 30, 20, 10]
 QUALITY_LEVELS_MVP = [100, 85, 70, 50, 30, 10]
 
-# Model settings
-ARCHITECTURES = {"resnet50": "resnet50", "efficientnet_b0": "efficientnet_b0"}
+# ISIC 2019 paths
+ISIC_ROOT = DATASET_ROOT / "isic_2019"
+ISIC_COMPRESSED_ROOT = DATASET_ROOT / "compressed_isic"
+ISIC_NUM_CLASSES = 8  # ISIC 2019 has 8 diagnostic categories
+
+# Supported models
+SUPPORTED_MODELS = ["resnet50", "efficientnet_b0"]
 
 # Training hyperparameters
 BATCH_SIZE = 16
@@ -32,6 +42,46 @@ NUM_EPOCHS = 50
 EARLY_STOPPING_PATIENCE = 10
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 1e-4
+NUM_WORKERS = min(4, os.cpu_count() or 1)  # Optimal for data loading
+
+# Reproducibility
+RANDOM_SEED = 42
+
+
+def set_seed(seed: int = RANDOM_SEED):
+    """
+    Set random seed for reproducibility across all libraries.
+
+    Args:
+        seed: Random seed value
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+    # For PyTorch >= 1.8 - enable deterministic algorithms
+    try:
+        torch.use_deterministic_algorithms(True)
+    except AttributeError:
+        pass  # Older PyTorch versions
+
+    # Required for deterministic CUDA operations on some systems
+    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+
+    # For PyTorch >= 1.8 - enable deterministic algorithms
+    try:
+        torch.use_deterministic_algorithms(True)
+    except AttributeError:
+        pass  # Older PyTorch version
+
+    # Required for deterministic CUDA operations on some systems
+    import os
+    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
 
 
 def get_data_path(task, split, quality=None, format=None):

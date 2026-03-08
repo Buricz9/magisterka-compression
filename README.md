@@ -2,11 +2,14 @@
 
 Wpływ kompresji obrazów (JPEG, JPEG2000, AVIF) na skuteczność modeli AI w diagnostyce kardiologicznej.
 
-## Zbiór danych
+## Zbiory danych
 
 **ARCADE** - 3000 obrazów angiografii wieńcowej (26 klas klasyfikacji)
+- Source: https://zenodo.org/records/10390295
 
-**Source:** https://zenodo.org/records/10390295
+**ISIC 2019** (benchmark) - 25,331 obrazów dermoskopii (8 klas)
+- Source: https://challenge.isic-archive.com/landing/2019/
+- Klasy: MEL, NV, BCC, AK, BKL, DF, VASC, SCC
 
 ## Formaty kompresji
 
@@ -44,6 +47,17 @@ python src/experiment_a.py --model resnet50 --task syntax --format avif --mvp --
 python src/experiment_b.py --model resnet50 --task syntax --format jpeg --mvp --device cuda
 python src/experiment_b.py --model resnet50 --task syntax --format jpeg2000 --mvp --device cuda
 python src/experiment_b.py --model resnet50 --task syntax --format avif --mvp --device cuda
+
+# ISIC 2019 (benchmark)
+# 1. Pobierz dataset z https://challenge.isic-archive.com/landing/2019/
+# 2. Preprocessing:
+python src/preprocess_isic.py --input-root dataset/isic_2019_raw --output-root dataset/isic_2019
+
+# 3. Kompresja:
+python src/compress_isic.py --format all --mvp
+
+# 4. Eksperymenty:
+python src/experiment_isic.py --experiment both --model resnet50 --mvp --device cuda
 ```
 
 ## Pełna dokumentacja

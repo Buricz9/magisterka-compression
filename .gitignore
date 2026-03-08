@@ -48,3 +48,6 @@ desktop.ini
 
 # Claude Code agents
 .claude/agents/
+
+# Claude Code local settings (keep local)
+.claude/settings.local.json

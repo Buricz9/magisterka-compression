@@ -4,6 +4,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.amp import autocast, GradScaler
 import timm
 from tqdm import tqdm
 import argparse
@@ -23,19 +24,30 @@ def create_model(model_name, num_classes):
     return timm.create_model(model_name, pretrained=True, num_classes=num_classes)
 
 
-def train_epoch(model, dataloader, criterion, optimizer, device):
-    """Train for one epoch."""
+def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None, use_amp=True):
+    """Train for one epoch with optional AMP."""
     model.train()
     running_loss, correct, total = 0.0, 0, 0
 
     for images, labels, _ in tqdm(dataloader, desc="Training"):
         images, labels = images.to(device), labels.to(device)
-        optimizer.zero_grad()
 
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+        if scaler is not None:
+            # Mixed precision training
+            with autocast(device_type=device.type, enabled=use_amp):
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+            optimizer.zero_grad(set_to_none=True)  # More efficient than zero_grad()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            # Standard training
+            optimizer.zero_grad(set_to_none=True)
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
         running_loss += loss.item() * images.size(0)
         _, predicted = outputs.max(1)
@@ -45,16 +57,18 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
     return running_loss / total, 100. * correct / total
 
 
-def validate(model, dataloader, criterion, device):
-    """Validate the model."""
+def validate(model, dataloader, criterion, device, use_amp=True):
+    """Validate the model with optional AMP for consistency."""
     model.eval()
     running_loss, correct, total = 0.0, 0, 0
 
     with torch.no_grad():
         for images, labels, _ in tqdm(dataloader, desc="Validation"):
             images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+
+            with autocast(device_type=device.type, enabled=use_amp):
+                outputs = model(images)
+                loss = criterion(outputs, labels)
 
             running_loss += loss.item() * images.size(0)
             _, predicted = outputs.max(1)
@@ -89,8 +103,14 @@ def evaluate_model(model, dataloader, device):
 
 def train_model(model_name, task, train_quality, val_quality, num_epochs,
                 batch_size, learning_rate, device, train_format=None, val_format=None,
-                experiment_id=None, early_stopping_patience=10):
+                experiment_id=None, early_stopping_patience=None, use_amp=True):
     """Train a model on ARCADE dataset."""
+    # Set seed for reproducibility
+    config.set_seed()
+
+    if early_stopping_patience is None:
+        early_stopping_patience = config.EARLY_STOPPING_PATIENCE
+
     if experiment_id is None:
         quality_str = f"q{train_quality}" if train_quality else "baseline"
         format_str = f"_{train_format}" if train_format and train_format != 'jpeg' else ""
@@ -100,18 +120,24 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
     print(f"Model: {model_name}, Task: {task}, Epochs: {num_epochs}")
     if train_format:
         print(f"Format: {train_format}")
+    print(f"AMP: {'Enabled' if use_amp else 'Disabled'}")
 
-    # Create dataloaders
-    train_loader = get_dataloader(task, 'train', train_quality, train_format, batch_size, num_workers=0, shuffle=True)
-    val_loader = get_dataloader(task, 'val', val_quality, val_format, batch_size, num_workers=0, shuffle=False)
+    # Create dataloaders with optimal num_workers
+    train_loader = get_dataloader(task, 'train', train_quality, train_format, batch_size,
+                                  num_workers=config.NUM_WORKERS, shuffle=True)
+    val_loader = get_dataloader(task, 'val', val_quality, val_format, batch_size,
+                                num_workers=config.NUM_WORKERS, shuffle=False)
 
     # Create model
     num_classes = train_loader.dataset.num_classes
     model = create_model(model_name, num_classes).to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=config.WEIGHT_DECAY)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
+
+    # AMP scaler - only enabled for CUDA devices
+    scaler = GradScaler(enabled=use_amp and device.type == 'cuda')
 
     # Training loop
     best_val_acc, best_epoch, patience_counter = 0.0, 0, 0
@@ -120,8 +146,8 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
     for epoch in range(1, num_epochs + 1):
         print(f"\nEpoch {epoch}/{num_epochs}")
 
-        train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
-        val_loss, val_acc = validate(model, val_loader, criterion, device)
+        train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device, scaler, use_amp)
+        val_loss, val_acc = validate(model, val_loader, criterion, device, use_amp)
         scheduler.step()
 
         history['train_loss'].append(train_loss)
@@ -158,7 +184,8 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
         'val_quality': val_quality,
         'best_epoch': best_epoch,
         'best_val_acc': best_val_acc,
-        'history': history
+        'history': history,
+        'use_amp': use_amp
     }
 
     results_dir = config.get_results_path(experiment_id)
@@ -171,16 +198,17 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="resnet50")
+    parser.add_argument("--model", type=str, default="resnet50", choices=config.SUPPORTED_MODELS)
     parser.add_argument("--task", type=str, default="syntax", choices=["syntax", "stenosis"])
     parser.add_argument("--train-quality", type=int, default=None)
     parser.add_argument("--val-quality", type=int, default=None)
     parser.add_argument("--format", type=str, default="jpeg", choices=["jpeg", "jpeg2000", "avif"],
                        help="Compression format")
-    parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--epochs", type=int, default=config.NUM_EPOCHS)
+    parser.add_argument("--batch-size", type=int, default=config.BATCH_SIZE)
+    parser.add_argument("--lr", type=float, default=config.LEARNING_RATE)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--no-amp", action="store_true", help="Disable AMP (mixed precision)")
     args = parser.parse_args()
 
     train_model(
@@ -191,9 +219,10 @@ def main():
         num_epochs=args.epochs,
         batch_size=args.batch_size,
         learning_rate=args.lr,
-        device=args.device,
+        device=torch.device(args.device),
         train_format=args.format,
-        val_format=args.format
+        val_format=args.format,
+        use_amp=not args.no_amp
     )
 
 

@@ -25,6 +25,7 @@
 | Pomiar jakości (PSNR, SSIM) | ✅ |
 | Eksperyment A/B - ResNet-50, syntax | ✅ |
 | **ISIC 2019 - kod** | ✅ Zaimplementowany |
+| **Feature maps (spectral entropy)** | ✅ Zaimplementowany |
 | Stenosis | ❌ Pominięty (tylko 1 klasa) |
 
 ### 🔴 Do Zrobienia
@@ -34,7 +35,6 @@
 | Analiza statystyczna (p-value) | Wysoki |
 | Tabele i wykresy do artykułu | Wysoki |
 | **ISIC 2019 - pobranie i uruchomienie** | Wysoki |
-| Feature maps (spectral entropy) | Średni |
 
 ---
 

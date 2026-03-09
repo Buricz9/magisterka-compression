@@ -64,23 +64,7 @@ def set_seed(seed: int = RANDOM_SEED):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    # For PyTorch >= 1.8 - enable deterministic algorithms
-    try:
-        torch.use_deterministic_algorithms(True)
-    except AttributeError:
-        pass  # Older PyTorch versions
-
     # Required for deterministic CUDA operations on some systems
-    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
-
-    # For PyTorch >= 1.8 - enable deterministic algorithms
-    try:
-        torch.use_deterministic_algorithms(True)
-    except AttributeError:
-        pass  # Older PyTorch version
-
-    # Required for deterministic CUDA operations on some systems
-    import os
     os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
 
 

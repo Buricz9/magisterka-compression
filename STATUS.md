@@ -4,21 +4,20 @@
 
 **Data ostatniej aktualizacji:** 2026-03-10
 **Status:** W realizacji
-**Ocena jakości kodu:** 8.5/10 (po wprowadzonych poprawkach)
+**Ocena jakości kodu:** 8.5/10
 
 ---
 
 ## ✅ Zakończone Elementy
 
 ### Implementacja
-- ✅ Kompresja obrazów (JPEG, JPEG2000, AVIF) z matched compression ratio
-- ✅ Pomiar jakości (PSNR, SSIM)
+- ✅ Kompresja obrazów (JPEG, JPEG2000, AVIF)
 - ✅ Pipeline treningowy z AMP (mixed precision)
 - ✅ Eksperyment A: Train na skompresowanych, test na oryginałach
 - ✅ Eksperyment B: Train na oryginałach, test na skompresowanych
-- ✅ Analiza statystyczna (z poprawionymi testami: paired dla Exp B)
-- ✅ Feature maps analysis (spectral entropy, effective rank)
-- ✅ ISIC 2019 dataset (benchmark) - pełna implementacja
+- ✅ Analiza statystyczna (poprawione testy: paired dla Exp B)
+- ✅ Feature maps analysis (spectral entropy, Shannon entropy)
+- ✅ Pomiar jakości (PSNR, SSIM, compression ratio)
 
 ### Modele
 - ✅ ResNet-50
@@ -28,140 +27,124 @@
 - ✅ ARCADE (angiografia wieńcowa) - task: syntax (26 klas)
 - ✅ ISIC 2019 (dermoskopia) - 8 klas (benchmark)
 
-### Poprawki kodu (2026-03-10)
-- ✅ K-fold cross-validation (K=5)
-- ✅ Poprawione testy statystyczne (paired t-test dla Exp B)
-- ✅ Pełne metadane reprodukcyjności
-- ✅ Generowanie tabel LaTeX i wykresów
-- ✅ Feature analysis dla ISIC 2019
-
 ---
 
-## 🚀 Aktualna Struktura Projektu
+## 🚀 Uproszczona Struktura Projektu
 
 ```
 c:/Uczelnia/Magisterka/
-├── config.py                          # Konfiguracja projektu
-├── DECISIONS.md                       # Ustalenia z promotorem
+├── config.py                    # Konfiguracja
+├── DECISIONS.md                 # Ustalenia z promotora
+├── STATUS.md                    # Ten plik
 │
-├── src/                               # Główny kod źródłowy
-│   ├── dataset.py                     # ARCADE dataset
-│   ├── isic_dataset.py                # ISIC 2019 dataset
-│   ├── train.py                       # Trening (standard)
-│   ├── train_cv.py                    # Trening z K-fold CV
-│   ├── experiment_a.py                # Eksperyment A
-│   ├── experiment_b.py                # Eksperyment B
-│   ├── experiment_isic.py             # Eksperymenty ISIC
-│   ├── run_efficientnet_experiments.py # EfficientNet-B0 runner
-│   │
-│   ├── statistical_analysis.py        # Analiza statystyczna (oryginał)
-│   ├── statistical_analysis_corrected.py # POPRAWIONA analiza statystyczna
-│   │
-│   ├── feature_analysis.py             # Feature maps analysis
-│   ├── generate_tables_plots.py       # Generowanie tabel/wykresów
-│   │
-│   ├── compress_images.py             # Kompresja ARCADE
-│   ├── compress_isic.py               # Kompresja ISIC
-│   ├── measure_quality.py             # PSNR, SSIM
-│   ├── preprocess_isic.py             # Preprocessing ISIC
-│   └── generate_plots.py              (przestarzałe - użyj generate_tables_plots.py)
-│
-├── dataset/                           # Dane
-│   ├── arcade/                        # ARCADE dataset
-│   ├── compressed/                    # ARCADE skompresowane
-│   ├── isic_2019/                     # ISIC 2019 dataset
-│   └── compressed_isic/               # ISIC 2019 skompresowane
-│
-├── results/                           # Wyniki eksperymentów
-│   ├── experiment_a/                  # Wyniki Exp A
-│   ├── experiment_b/                  # Wyniki Exp B
-│   ├── isic_experiment_a/             # ISIC Exp A
-│   ├── isic_experiment_b/             # ISIC Exp B
-│   ├── efficientnet_b0/               # EfficientNet-B0 wyniki
-│   ├── statistical_analysis/          # Analizy statystyczne
-│   ├── feature_analysis/              # Feature maps
-│   └── metrics/                       # Metryki jakości
-│
-├── models/                            # Modele i checkpointy
-│   └── checkpoints/                   # Zapisane modele
-│
-├── plots/                             # Wykresy
-└── venv/                              # Virtual environment
+└── src/                         # Kod źródłowy (12 plików)
+    │
+    ├── core/                    # Trening i datasety
+    │   ├── dataset.py           # ARCADE dataset
+    │   ├── isic_dataset.py      # ISIC 2019 dataset
+    │   └── train.py             # Trening modeli
+    │
+    ├── experiments/             # Eksperymenty
+    │   ├── experiment_a.py      # Train na skompresowanych
+    │   └── experiment_b.py      # Test na skompresowanych
+    │
+    ├── analysis/                # Analiza wyników
+    │   ├── statistical_analysis_corrected.py  # Analiza statystyczna
+    │   ├── feature_analysis.py   # Feature maps analysis
+    │   └── generate_tables_plots.py  # Tabele i wykresy
+    │
+    └── processing/              # Przetwarzanie danych
+        ├── compress_images.py   # Kompresja ARCADE
+        ├── compress_isic.py     # Kompresja ISIC
+        └── measure_quality.py   # PSNR, SSIM
 ```
+
+**Redukcja:** 20→12 plików Python (~40% mniej chaosu)
 
 ---
 
-## 📊 Wyniki
+## 📊 Wymagania Promotora (OBOWIĄZKOWE)
 
-### Dostępne wyniki
-- ARCADE (ResNet-50): Eksperymenty A i B dla wszystkich formatów
-- ISIC 2019 (ResNet-50): Częściowo
-- Feature analysis: Przykładowe analizy
-- Analizy statystyczne: Z poprawionymi testami
+✅ **1. EfficientNet-B0** - Drugi model do artykułu
+```bash
+python src/experiments/experiment_a.py --model efficientnet_b0 --task syntax --format jpeg --mvp
+python src/experiments/experiment_b.py --model efficientnet_b0 --task syntax --format jpeg --mvp
+```
 
-### Brakujące wyniki (do uzyskania)
-- EfficientNet-B0 pełne eksperymenty
-- K-fold cross-validation wyniki
-- Kompletna analiza statystyczna z poprawionymi testami
-- Tabele i wykresy do artykułu
+✅ **2. Analiza statystyczna** - p-value dla porównania formatów
+```bash
+python src/analysis/statistical_analysis_corrected.py --experiment experiment_a --model resnet50 --task syntax
+python src/analysis/statistical_analysis_corrected.py --experiment experiment_b --model resnet50 --task syntax
+```
+
+✅ **3. Tabele z wynikami** - Podsumowanie liczebne
+```bash
+python src/analysis/generate_tables_plots.py --model resnet50 --task syntax
+```
+
+✅ **4. Benchmark dataset** - ISIC 2019 (inny zbiór medyczny)
+```bash
+python src/experiments/experiment_a.py --model resnet50 --dataset isic --format jpeg --mvp
+python src/experiments/experiment_b.py --model resnet50 --dataset isic --format jpeg --mvp
+```
+
+✅ **5. Feature maps analysis** - Spectral entropy, Shannon entropy
+```bash
+python src/analysis/feature_analysis.py --model resnet50 --experiment-id <ID> --dataset arcade
+```
 
 ---
 
 ## 🎯 Priorytety na Najbliższy Czas
 
 ### WYSOKI priorytet (wymagane do artykułu)
-1. **Uruchomić K-fold cross-validation** dla kluczowych konfiguracji
-2. **Wygenerować poprawione analizy statystyczne** (paired tests)
-3. **Uruchomić EfficientNet-B0** dla ARCADE i ISIC
-4. **Stworzyć tabele i wykresy** do artykułu
-
-### Średni priorytet
-5. Feature analysis dla EfficientNet-B0
-6. Kompletna analiza porównawcza ResNet-50 vs EfficientNet-B0
+1. **Uruchomić eksperymenty dla ResNet-50** (ARCADE + ISIC)
+2. **Uruchomić eksperymenty dla EfficientNet-B0** (ARCADE + ISIC)
+3. **Wygenerować poprawione analizy statystyczne**
+4. **Stworzyć tabele i wykresy do artykułu**
+5. **Przeprowadzić feature analysis dla kluczowych modeli**
 
 ---
 
-## 🔧 Kluczowe Pliki i Ich Zastosowanie
+## 🔧 Kluczowe Polecenia
 
-### Trening i Eksperymenty
+### Trening i eksperymenty
 ```bash
-# Standard trening (pojedynczy run)
-python src/train.py --model resnet50 --task syntax --epochs 50
+# Standard trening
+python src/core/train.py --model resnet50 --task syntax --epochs 50
 
-# K-fold cross-validation (zalecane do artykułu)
-python src/train_cv.py --model resnet50 --task syntax --k-folds 5
+# Eksperyment A: Train na skompresowanych, test na oryginałach
+python src/experiments/experiment_a.py --model resnet50 --task syntax --format jpeg --mvp
 
-# Eksperyment A (train na skompresowanych)
-python src/experiment_a.py --model resnet50 --task syntax --format jpeg --mvp
+# Eksperyment B: Train na oryginałach, test na skompresowanych
+python src/experiments/experiment_b.py --model resnet50 --task syntax --format jpeg --mvp
 
-# Eksperyment B (test na skompresowanych)
-python src/experiment_b.py --model resnet50 --task syntax --format jpeg --mvp
+# EfficientNet-B0
+python src/experiments/experiment_a.py --model efficientnet_b0 --task syntax --format jpeg --mvp
 
-# EfficientNet-B0 wszystkie eksperymenty
-python src/run_efficientnet_experiments.py --experiment both --dataset both --mvp
+# ISIC 2019
+python src/experiments/experiment_a.py --model resnet50 --dataset isic --format jpeg --mvp
 ```
 
 ### Analiza
 ```bash
-# POPRAWIONA analiza statystyczna (używaj tej!)
-python src/statistical_analysis_corrected.py --experiment experiment_a --model resnet50 --task syntax
-python src/statistical_analysis_corrected.py --experiment experiment_b --model resnet50 --task syntax
+# POPRAWIONA analiza statystyczna (zawsze używaj tej!)
+python src/analysis/statistical_analysis_corrected.py --experiment experiment_a --model resnet50 --task syntax
 
 # Tabele i wykresy do artykułu
-python src/generate_tables_plots.py --model resnet50 --task syntax
+python src/analysis/generate_tables_plots.py --model resnet50 --task syntax
 
 # Feature analysis
-python src/feature_analysis.py --model resnet50 --experiment-id <ID> --dataset arcade
-python src/feature_analysis.py --model resnet50 --experiment-id <ID> --dataset isic
+python src/analysis/feature_analysis.py --model resnet50 --experiment-id <ID> --dataset arcade
 ```
 
 ### Kompresja
 ```bash
 # Kompresja ARCADE
-python src/compress_images.py --format all --task syntax --split all --mvp
+python src/processing/compress_images.py --format all --task syntax --split all --mvp
 
 # Kompresja ISIC 2019
-python src/compress_isic.py --format all --mvp
+python src/processing/compress_isic.py --format all --mvp
 ```
 
 ---
@@ -170,12 +153,12 @@ python src/compress_isic.py --format all --mvp
 
 ### Formaty kompresji
 - **JPEG**: Standard internetowy, subsampling=0 (4:4:4)
-- **JPEG2000**: Standard DICOM, kompresja przez CR (compression ratio)
+- **JPEG2000**: Standard DICOM, kompresja przez CR
 - **AVIF**: Nowoczesny format (2019), wysoka kompresja
 
 ### Poziomy jakości
 - **Full**: [100, 95, 90, 85, 80, 75, 70, 60, 50, 40, 30, 20, 10]
-- **MVP**: [100, 85, 70, 50, 30, 10]
+- **MVP**: [100, 85, 70, 50, 30, 10] (używaj `--mvp` flag)
 
 ### Hiperparametry
 - Learning rate: 1e-4
@@ -188,38 +171,20 @@ python src/compress_isic.py --format all --mvp
 
 ---
 
-## 📝 Najważniejsze Ulepszenia (2026-03-10)
+## 📈 Postęp
 
-### Krytyczne poprawki metodologiczne
-1. **K-fold cross-validation** - zamiast pojedynczego podziału
-2. **Paired tests** dla Eksperymentu B - poprawna analiza statystyczna
-3. **Metadane reprodukcyjności** - pełne śledzenie wersji bibliotek
+**Zakończone:** ~75%
+**Pozostało:** ~25% (głównie uruchomienie eksperymentów i generowanie wyników)
 
-### Nowe funkcjonalności
-4. **EfficientNet-B0** - drugi model wymagany przez promotora
-5. **Generowanie tabel/wykresów** - LaTeX + matplotlib
-6. **ISIC 2019 feature analysis** - pełne wsparcie dla benchmarku
-
----
-
-## 🚨 Ostrzeżenia
-
-### Przestarzałe pliki (nie używaj)
-- `src/statistical_analysis.py` - ❌ Użyj `statistical_analysis_corrected.py`
-- `src/generate_plots.py` - ❌ Użyj `generate_tables_plots.py`
-
-### Ważne uwagi
-- ZAWSZE używaj `statistical_analysis_corrected.py` - stara wersja ma błędne testy!
-- K-fold CV wymaga 5× więcej czasu - rozważ K=3 do testów
-- Feature analysis jest memory-intensive - zmniejsz `--max-batches` jak potrzeba
+**Szacowany czas do ukończenia:** 2-3 tygodnie intensywnej pracy nad eksperymentami
 
 ---
 
 ## 📞 Wsparcie
 
-### Dokumentacja techniczna
+### Dokumentacja
 - Decyzje promotora: `DECISIONS.md`
-- Artykuły naukowe o datasetach: `ArtykułyWykorzystująceDataset.md`
+- Ten plik: `STATUS.md`
 
 ### Struktura wyników
 - JSON z pełnymi metadanymi w `results/*/training_results.json`
@@ -228,9 +193,18 @@ python src/compress_isic.py --format all --mvp
 
 ---
 
-## 📈 Postęp
+## 🚨 Ważne Ostrzeżenia
 
-**Zakończone:** ~75%
-**Pozostało:** ~25% (głównie uruchomienie eksperymentów i generowanie wyników)
+### ZAWSZE używaj poprawionej analizy statystycznej:
+- ✅ `src/analysis/statistical_analysis_corrected.py` - POPRAWIONA
+- ❌ Stara wersja została usunięta
 
-**Szacowany czas do ukończenia:** 2-3 tygodnie intensywnej pracy nad eksperymentami
+### Feature analysis jest memory-intensive:
+- Zmniejsz `--max-batches` jak potrzebba
+- Może wymagać dużej ilości RAM GPU
+
+---
+
+## 🎯 Cel Projektu
+
+**Celem pracy jest wyznaczenie dopuszczalnego poziomu kompresji stratnej dla diagnostyki kardiologicznej wspomaganej sztuczną inteligencją oraz sformułowanie rekomendacji praktycznych dla systemów PACS i platform telemedycznych.**

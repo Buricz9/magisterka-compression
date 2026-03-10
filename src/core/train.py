@@ -12,11 +12,29 @@ import json
 from datetime import datetime
 from sklearn.metrics import accuracy_score, f1_score
 import numpy as np
+import platform
+from torch import __version__ as torch_version
+import torchvision
+import sklearn
 
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 import config
-from dataset import get_dataloader
+from src.core.dataset import get_dataloader
+
+
+def get_system_metadata():
+    """Collect system and library metadata for reproducibility."""
+    return {
+        'python_version': platform.python_version(),
+        'pytorch_version': torch_version,
+        'torchvision_version': torchvision.__version__,
+        'cuda_version': torch.version.cuda if torch.cuda.is_available() else None,
+        'cuda_available': torch.cuda.is_available(),
+        'timm_version': timm.__version__,
+        'numpy_version': np.__version__,
+        'sklearn_version': sklearn.__version__,
+    }
 
 
 def create_model(model_name, num_classes):
@@ -175,17 +193,49 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
                 print(f"Early stopping at epoch {epoch}")
                 break
 
-    # Save results
+    # Save results with full metadata for reproducibility
     results = {
         'experiment_id': experiment_id,
         'model_name': model_name,
         'task': task,
         'train_quality': train_quality,
         'val_quality': val_quality,
+        'train_format': train_format,
+        'val_format': val_format,
         'best_epoch': best_epoch,
         'best_val_acc': best_val_acc,
         'history': history,
-        'use_amp': use_amp
+        'use_amp': use_amp,
+
+        # REPRODUCIBILITY METADATA
+        'reproducibility': {
+            'random_seed': config.RANDOM_SEED,
+            'system': get_system_metadata(),
+            'device': str(device),
+        },
+
+        # HYPERPARAMETERS
+        'hyperparameters': {
+            'learning_rate': learning_rate,
+            'weight_decay': config.WEIGHT_DECAY,
+            'batch_size': batch_size,
+            'num_epochs': num_epochs,
+            'optimizer': 'Adam',
+            'scheduler': 'CosineAnnealingLR',
+            'early_stopping_patience': config.EARLY_STOPPING_PATIENCE,
+            'criterion': 'CrossEntropyLoss'
+        },
+
+        # EXPERIMENT DESIGN
+        'experiment_design': {
+            'data_augmentation': True,
+            'target_size': (224, 224),
+            'normalize_mean': [0.485, 0.456, 0.406],
+            'normalize_std': [0.229, 0.224, 0.225],
+            'num_workers': config.NUM_WORKERS,
+            'pin_memory': True,
+            'persistent_workers': True
+        }
     }
 
     results_dir = config.get_results_path(experiment_id)

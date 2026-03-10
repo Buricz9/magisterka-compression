@@ -438,7 +438,8 @@ def analyze_layer_progression(
     model_name: str,
     task: str,
     device: str = 'cuda',
-    max_batches: int = 10
+    max_batches: int = 10,
+    dataset: str = 'arcade'
 ) -> Dict:
     """
     Analyze how information content changes across network depth.
@@ -449,6 +450,7 @@ def analyze_layer_progression(
         task: Dataset task
         device: Computation device
         max_batches: Maximum batches to analyze
+        dataset: Dataset type ('arcade' or 'isic')
 
     Returns:
         Layer progression analysis results
@@ -459,8 +461,17 @@ def analyze_layer_progression(
     # Use optimal num_workers for performance (min of 4 or CPU count)
     import os
     optimal_workers = min(4, os.cpu_count() or 1)
-    dataloader = get_dataloader(task, 'test', quality=None, format=None,
-                                batch_size=16, num_workers=optimal_workers, shuffle=False)
+
+    # Select appropriate dataloader based on dataset
+    if dataset == 'isic':
+        from isic_dataset import get_isic_dataloader
+        print("Using ISIC 2019 dataset for feature analysis")
+        dataloader = get_isic_dataloader('test', quality=None, format=None,
+                                        batch_size=16, num_workers=optimal_workers, shuffle=False)
+    else:
+        dataloader = get_dataloader(task, 'test', quality=None, format=None,
+                                    batch_size=16, num_workers=optimal_workers, shuffle=False)
+
     num_classes = dataloader.dataset.num_classes
 
     model = create_model(model_name, num_classes)
@@ -499,6 +510,7 @@ def analyze_layer_progression(
         'checkpoint': str(checkpoint_path),
         'model': model_name,
         'task': task,
+        'dataset': dataset,
         'layer_results': layer_results,
         'progression': progression,
         'analysis_date': datetime.now().isoformat()
@@ -511,7 +523,8 @@ def run_feature_analysis(
     experiment_id: str = None,
     device: str = 'cuda',
     max_batches: int = 10,
-    output_dir: Optional[Path] = None
+    output_dir: Optional[Path] = None,
+    dataset: str = 'arcade'
 ) -> Dict:
     """
     Run feature analysis on a trained model.
@@ -523,6 +536,7 @@ def run_feature_analysis(
         device: Computation device
         max_batches: Maximum batches to analyze
         output_dir: Output directory for results
+        dataset: Dataset type ('arcade' or 'isic')
 
     Returns:
         Analysis results dictionary
@@ -543,6 +557,7 @@ def run_feature_analysis(
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
     print(f"Analyzing checkpoint: {checkpoint_path}")
+    print(f"Dataset: {dataset}")
 
     # Run analysis
     results = analyze_layer_progression(
@@ -550,7 +565,8 @@ def run_feature_analysis(
         model_name=model_name,
         task=task,
         device=device,
-        max_batches=max_batches
+        max_batches=max_batches,
+        dataset=dataset
     )
 
     # Save results
@@ -611,13 +627,20 @@ def main():
         type=str,
         default="syntax",
         choices=["syntax", "stenosis"],
-        help="Dataset task"
+        help="Dataset task (for ARCADE)"
     )
     parser.add_argument(
         "--experiment-id",
         type=str,
         required=True,
         help="Experiment ID to analyze"
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="arcade",
+        choices=["arcade", "isic"],
+        help="Dataset to analyze"
     )
     parser.add_argument(
         "--device",
@@ -648,7 +671,8 @@ def main():
         experiment_id=args.experiment_id,
         device=args.device,
         max_batches=args.max_batches,
-        output_dir=output_dir
+        output_dir=output_dir,
+        dataset=args.dataset
     )
 
 

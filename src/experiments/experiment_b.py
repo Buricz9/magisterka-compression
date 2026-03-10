@@ -5,11 +5,11 @@ import torch
 import argparse
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 import config
-from train import train_model, evaluate_model, create_model
-from dataset import get_dataloader
+from core.train import train_model, evaluate_model, create_model
+from core.dataset import get_dataloader
 
 
 def run_experiment_b(model_name, task, quality_levels, num_epochs, batch_size, device, format='jpeg'):

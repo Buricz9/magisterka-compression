@@ -16,9 +16,9 @@ LOGS_ROOT = PROJECT_ROOT / "logs"
 PLOTS_ROOT = PROJECT_ROOT / "plots"
 
 # Dataset
-TASKS = ["syntax", "stenosis"]
+TASKS = ["syntax"]
 IMAGE_SIZE = (512, 512)
-NUM_CLASSES = {"syntax": 26, "stenosis": 2}
+NUM_CLASSES = {"syntax": 26}
 
 # Compression formats
 COMPRESSION_FORMATS = ["jpeg", "jpeg2000", "avif"]

@@ -10,11 +10,11 @@ import argparse
 from PIL import Image
 from tqdm import tqdm
 
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import config
-from compress_images import compress_image_jpeg, compress_image_jpeg2000, compress_image_avif
+from src.processing.compress_images import compress_image_jpeg, compress_image_jpeg2000, compress_image_avif
 
 
 def compress_isic_dataset(

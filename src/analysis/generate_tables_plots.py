@@ -41,22 +41,22 @@ def load_all_results(
     results = {}
 
     # Load ARCADE Experiment A
-    exp_a_path = config.RESULTS_ROOT / "experiment_a" / f"{model_name}_{task}_jpeg_results.csv"
+    exp_a_path = config.RESULTS_ROOT / "experiment_a" / f"{model_name}_arcade_{task}_jpeg_results.csv"
     if exp_a_path.exists():
         df_a = pd.read_csv(exp_a_path)
         # Load other formats
         for fmt in ['jpeg2000', 'avif']:
-            fmt_path = config.RESULTS_ROOT / "experiment_a" / f"{model_name}_{task}_{fmt}_results.csv"
+            fmt_path = config.RESULTS_ROOT / "experiment_a" / f"{model_name}_arcade_{task}_{fmt}_results.csv"
             if fmt_path.exists():
                 df_a = pd.concat([df_a, pd.read_csv(fmt_path)], ignore_index=True)
         results['arcade_exp_a'] = df_a
 
     # Load ARCADE Experiment B
-    exp_b_path = config.RESULTS_ROOT / "experiment_b" / f"{model_name}_{task}_jpeg_results.csv"
+    exp_b_path = config.RESULTS_ROOT / "experiment_b" / f"{model_name}_arcade_{task}_jpeg_results.csv"
     if exp_b_path.exists():
         df_b = pd.read_csv(exp_b_path)
         for fmt in ['jpeg2000', 'avif']:
-            fmt_path = config.RESULTS_ROOT / "experiment_b" / f"{model_name}_{task}_{fmt}_results.csv"
+            fmt_path = config.RESULTS_ROOT / "experiment_b" / f"{model_name}_arcade_{task}_{fmt}_results.csv"
             if fmt_path.exists():
                 df_b = pd.concat([df_b, pd.read_csv(fmt_path)], ignore_index=True)
         results['arcade_exp_b'] = df_b

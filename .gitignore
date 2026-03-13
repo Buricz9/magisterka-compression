@@ -2,6 +2,10 @@
 dataset/
 !dataset/.gitkeep
 
+# Skompresowane obrazy i CR maps - generowalne (5.8GB!)
+dataset/compressed/
+dataset/cr_maps/
+
 # Models - duże pliki checkpointów
 models/
 !models/.gitkeep
@@ -9,6 +13,9 @@ models/
 # Logs
 logs/
 !logs/.gitkeep
+
+# Plots - generowalne z danych
+plots/
 
 # Virtual environment
 venv/

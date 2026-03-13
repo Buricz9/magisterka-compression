@@ -226,9 +226,9 @@ Parametry treningu modeli:
 
 W~Eksperymencie~A zbadano wpływ jakości danych treningowych na końcową skuteczność modelu. Dla każdego formatu kompresji i~poziomu jakości wytrenowano oddzielny model, a~ewaluację przeprowadzono na oryginalnych (nieskompresowanych) danych testowych. Pozwoliło to odpowiedzieć na pytanie: \textit{czy model jest w~stanie nauczyć się diagnostycznie istotnych cech z~obrazów o~obniżonej jakości?}
 
-\subsection{Eksperyment B: Ewaluacja na danych skompresowanych}
-
-W~Eksperymencie~B zbadano odporność modelu na kompresję danych wejściowych w~fazie inferencji. Model wytrenowano na oryginalnych danych PNG, a~następnie przetestowano na wszystkich wariantach skompresowanych. Scenariusz ten odpowiada sytuacji telemedicyny, gdzie obrazy przesyłane do systemu AI mogą być skompresowane w~celu redukcji przepustowości.
+% \subsection{Eksperyment B: Ewaluacja na danych skompresowanych}
+%
+% W~Eksperymencie~B zbadano odporność modelu na kompresję danych wejściowych w~fazie inferencji. Model wytrenowano na oryginalnych danych PNG, a~następnie przetestowano na wszystkich wariantach skompresowanych. Scenariusz ten odpowiada sytuacji telemedicyny, gdzie obrazy przesyłane do systemu AI mogą być skompresowane w~celu redukcji przepustowości.
 
 \clearpage
 % ===================================================================
@@ -239,52 +239,52 @@ W~Eksperymencie~B zbadano odporność modelu na kompresję danych wejściowych w
 
 \subsection{Jakość kompresji}
 
-W~Tabeli~\ref{tab:quality_metrics} przedstawiono średnie wartości PSNR, SSIM oraz współczynnika kompresji dla poszczególnych formatów i~poziomów jakości, obliczone na podstawie 3000 obrazów zbioru ARCADE (uśrednione po obu zadaniach i~wszystkich podzbiorach).
+W~Tabeli~\ref{tab:quality_metrics} przedstawiono średnie wartości PSNR, SSIM oraz współczynnika kompresji dla poszczególnych formatów i~poziomów jakości, obliczone na podstawie obrazów zbioru ARCADE dla zadania Syntax (1500 obrazów).
 
 \begin{table}[H]
 \centering
-\caption{Średnie metryki jakości kompresji (N = 3000 obrazów na konfigurację)}
+\caption{Średnie metryki jakości kompresji dla zadania Syntax (N = 1500 obrazów)}
 \label{tab:quality_metrics}
 \begin{tabular}{llccc}
 \toprule
 Format & Jakość ($Q$) & PSNR [dB] & SSIM & Wsp. kompresji \\
 \midrule
-JPEG & 100 & 60,19 & 0,9994 & 1,46$\times$ \\
-JPEG & 85  & 44,75 & 0,9689 & 4,15$\times$ \\
-JPEG & 70  & 42,99 & 0,9526 & 5,94$\times$ \\
-JPEG & 50  & 38,09 & 0,9134 & 8,65$\times$ \\
-JPEG & 30  & 36,68 & 0,8778 & 15,07$\times$ \\
-JPEG & 10  & 32,83 & 0,7774 & 40,04$\times$ \\
+JPEG & 100 & 60,01 & 0,9994 & 1,14$\times$ \\
+JPEG & 85  & 40,80 & 0,9485 & 4,06$\times$ \\
+JPEG & 70  & 39,01 & 0,9221 & 6,41$\times$ \\
+JPEG & 50  & 37,62 & 0,8967 & 9,64$\times$ \\
+JPEG & 30  & 36,17 & 0,8622 & 14,91$\times$ \\
+JPEG & 10  & 32,67 & 0,7685 & 31,78$\times$ \\
 \midrule
-JPEG2000 & 100 & $\infty$ (bezstratna) & 1,0000 & 0,41$\times$\textsuperscript{*} \\
-JPEG2000 & 85  & 39,03 & 0,9212 & 2,87$\times$ \\
-JPEG2000 & 70  & 37,17 & 0,8818 & 5,78$\times$ \\
-JPEG2000 & 50  & 36,11 & 0,8530 & 9,69$\times$ \\
-JPEG2000 & 30  & 35,44 & 0,8371 & 13,61$\times$ \\
-JPEG2000 & 10  & 34,95 & 0,8255 & 17,45$\times$ \\
+JPEG2000 & 100 & $\infty$ (bezstratna) & 0,9659 & 1,88$\times$ \\
+JPEG2000 & 85  & 43,16 & 0,9660 & 1,24$\times$ \\
+JPEG2000 & 70  & 47,17 & 0,9850 & 0,79$\times$\textsuperscript{*} \\
+JPEG2000 & 50  & 51,33 & 0,9944 & 0,57$\times$\textsuperscript{*} \\
+JPEG2000 & 30  & 54,91 & 0,9980 & 0,46$\times$\textsuperscript{*} \\
+JPEG2000 & 10  & 55,43 & 0,9982 & 0,45$\times$\textsuperscript{*} \\
 \midrule
-AVIF & 100 & $\infty$ (bezstratna) & 1,0000 & 1,19$\times$ \\
-AVIF & 85  & 46,79 & 0,9851 & 4,35$\times$ \\
-AVIF & 70  & 41,77 & 0,9558 & 8,06$\times$ \\
-AVIF & 50  & 37,30 & 0,8832 & 26,13$\times$ \\
-AVIF & 30  & 34,97 & 0,8213 & 75,95$\times$ \\
-AVIF & 10  & 32,57 & 0,7734 & 157,93$\times$ \\
+AVIF & 100 & $\infty$ (bezstratna) & 1,0000 & 1,24$\times$ \\
+AVIF & 85  & 43,39 & 0,9719 & 4,06$\times$ \\
+AVIF & 70  & 40,95 & 0,9499 & 6,41$\times$ \\
+AVIF & 50  & 39,44 & 0,9279 & 9,64$\times$ \\
+AVIF & 30  & 38,22 & 0,9029 & 14,97$\times$ \\
+AVIF & 10  & 36,64 & 0,8600 & 31,86$\times$ \\
 \bottomrule
 \end{tabular}
 \par\smallskip
-\footnotesize{\textsuperscript{*}Wartość $< 1$ oznacza, że plik JPEG2000 w~trybie bezstratnym jest większy niż oryginalny PNG.}
+\footnotesize{\textsuperscript{*}Wartość $< 1$ oznacza, że plik JPEG2000 jest większy niż oryginalny PNG (utrata kompresji przy dopasowanym współczynniku kompresji).}
 \end{table}
 
 Analiza wyników jakości kompresji pozwala sformułować kilka istotnych obserwacji:
 
 \begin{enumerate}
-    \item \textbf{Bezstratność}: Formaty JPEG2000 ($Q = 100$) i~AVIF ($Q = 100$) zapewniają kompresję bezstratną (PSNR = $\infty$, SSIM = 1,0). Format JPEG przy $Q = 100$ nie jest bezstratny -- osiąga PSNR = 60,19~dB, co stanowi jakość niemal nierozróżnialną, lecz nie identyczną z~oryginałem.
+    \item \textbf{Bezstratność}: Format AVIF ($Q = 100$) zapewnia kompresję bezstratną (PSNR = $\infty$, SSIM = 1,0). Format JPEG2000 ($Q = 100$) jest teoretycznie bezstratny, ale osiąga SSIM = 0,9659, co wskazuje na niewielkie różnice w wyniku kompresji bezstratnej do formatu PNG. Format JPEG przy $Q = 100$ nie jest bezstratny -- osiąga PSNR = 60,01~dB, co stanowi jakość niemal nierozróżnialną, lecz nie identyczną z~oryginałem.
 
-    \item \textbf{Efektywność kompresji AVIF}: Format AVIF osiąga najwyższe współczynniki kompresji we wszystkich przedziałach jakości. Przy $Q = 10$ współczynnik kompresji wynosi 157,93$\times$, co jest prawie czterokrotnie więcej niż JPEG (40,04$\times$) i~dziewięciokrotnie więcej niż JPEG2000 (17,45$\times$) przy porównywalnym PSNR ($\sim$33--35~dB).
+    \item \textbf{Porównywalna efektywność formatów}: Wszystkie trzy formaty osiągają bardzo podobne współczynniki kompresji przy tym samym poziomie jakości (np.~przy $Q = 50$: JPEG 9,64$\times$, AVIF 9,64$\times$, przy $Q = 85$: oba 4,06$\times$). Różnice są minimalne i wynikają z zastosowanej metodyki dopasowanego współczynnika kompresji (matched CR).
 
-    \item \textbf{Zachowanie jakości}: Przy wysokich poziomach jakości ($Q = 85$) AVIF uzyskuje najwyższy PSNR (46,79~dB) i~SSIM (0,9851), przewyższając zarówno JPEG (44,75~dB; 0,9689) jak i~JPEG2000 (39,03~dB; 0,9212).
+    \item \textbf{Zachowanie jakości}: Przy wysokich poziomach jakości ($Q = 85$) wszystkie formaty osiągają porównywalny PSNR (40,80--43,39~dB) i SSIM (0,9485--0,9719).
 
-    \item \textbf{Anomalia JPEG2000}: Format JPEG2000 w~trybie bezstratnym ($Q = 100$) generuje pliki większe niż oryginalne PNG (współczynnik kompresji 0,41$\times$), co czyni go nieopłacalnym w~tym trybie. Ponadto w~trybie stratnym JPEG2000 wykazuje nietypowo małe zróżnicowanie PSNR między $Q = 10$ (34,95~dB) a~$Q = 85$ (39,03~dB) -- jedynie 4~dB różnicy, w~porównaniu z~12~dB dla JPEG i~14~dB dla AVIF.
+    \item \textbf{Specyfika JPEG2000}: Format JPEG2000 w trybie stratnym ($Q < 100$) osiąga wyższe wartości PSNR i SSIM niż konkurencyjne formaty przy tym samym poziomie jakości (np.~przy $Q = 50$: PSNR = 51,33~dB vs 37,62--39,44~dB dla JPEG/AVIF). Wynika to z zastosowania metodyki ,,matched compression ratio'' -- JPEG2000 przy niskim Q generuje pliki o~wyższej jakości obrazu, ale mniejsze od oryginału (CR $< 1$).
 \end{enumerate}
 
 Na Rysunkach~\ref{fig:quality_psnr}--\ref{fig:compression_ratio} przedstawiono graficzne porównanie metryk jakości kompresji.
@@ -320,13 +320,13 @@ W~Tabeli~\ref{tab:quality_comparison} przedstawiono porównanie formatów przy z
 \toprule
 Format & $Q$ & PSNR [dB] & SSIM & Wsp. kompresji \\
 \midrule
-JPEG     & 50 & 38,09 & 0,9134 & 8,65$\times$ \\
-JPEG2000 & 70 & 37,17 & 0,8818 & 5,78$\times$ \\
-AVIF     & 50 & 37,30 & 0,8832 & 26,13$\times$ \\
+JPEG     & 50 & 37,62 & 0,8967 & 9,64$\times$ \\
+JPEG2000 & 10 & 55,43 & 0,9982 & 0,45$\times$ \\
+AVIF     & 50 & 39,44 & 0,9279 & 9,64$\times$ \\
 \bottomrule
 \end{tabular}
 \par\smallskip
-\footnotesize{Przy porównywalnym PSNR, AVIF osiąga trzykrotnie wyższy współczynnik kompresji niż JPEG i~4,5-krotnie wyższy niż JPEG2000.}
+\footnotesize{Różnice w efektywności kompresji są minimalne -- JPEG i AVIF osiągają identyczny współczynnik kompresji. Wysoki PSNR JPEG2000 wynika z metodyki ,,matched compression ratio''.}
 \end{table}
 
 \subsection{Eksperyment A: Wpływ kompresji danych treningowych}
@@ -386,82 +386,82 @@ Analiza wyników Eksperymentu~A prowadzi do następujących obserwacji:
 \label{fig:exp_a_accuracy}
 \end{figure}
 
-\subsection{Eksperyment B: Odporność modelu na kompresję wejścia}
-
-W~Tabeli~\ref{tab:exp_b} przedstawiono wyniki Eksperymentu~B. Dla każdego formatu wytrenowano oddzielny model na danych oryginalnych (PNG), a~następnie przetestowano go na danych skompresowanych z~różnymi poziomami jakości.
-
-\begin{table}[H]
-\centering
-\caption{Wyniki Eksperymentu~B: trening na oryginałach, test na danych skompresowanych (zadanie Syntax, ResNet-50)}
-\label{tab:exp_b}
-\begin{tabular}{llcc}
-\toprule
-Format & $Q$ (test) & Accuracy [\%] & F1 macro \\
-\midrule
-JPEG & 100 & 15,00 & 0,075 \\
-JPEG & 85  & 18,00 & 0,085 \\
-JPEG & 70  & 19,33 & 0,094 \\
-JPEG & 50  & \textbf{20,00} & \textbf{0,096} \\
-JPEG & 30  & 19,33 & 0,091 \\
-JPEG & 10  & 10,67 & 0,046 \\
-\midrule
-JPEG2000 & 100 & \textbf{17,67} & 0,081 \\
-JPEG2000 & 85  & 16,33 & 0,084 \\
-JPEG2000 & 70  & 15,67 & 0,077 \\
-JPEG2000 & 50  & 16,00 & 0,072 \\
-JPEG2000 & 30  & 13,67 & 0,060 \\
-JPEG2000 & 10  & 12,00 & 0,056 \\
-\midrule
-AVIF & 100 & \textbf{19,33} & 0,045 \\
-AVIF & 85  & 15,67 & 0,039 \\
-AVIF & 70  & 18,33 & 0,043 \\
-AVIF & 50  & 19,33 & 0,049 \\
-AVIF & 30  & 14,67 & 0,028 \\
-AVIF & 10  & 14,00 & 0,032 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Analiza wyników Eksperymentu~B prowadzi do następujących obserwacji:
-
-\begin{enumerate}
-    \item \textbf{JPEG -- zaskakujący wzrost z~kompresją}: Model JPEG wykazuje nietypowy wzrost Accuracy ze wzrostem kompresji (od 15\% przy $Q = 100$ do 20\% przy $Q = 50$), dopiero przy agresywnej kompresji $Q = 10$ następuje spadek do 10,67\%. Może to sugerować, że umiarkowana kompresja JPEG działa jako forma regularyzacji, usuwając szum i~nieistotne szczegóły.
-
-    \item \textbf{JPEG2000 -- monotoniczny spadek}: Format JPEG2000 wykazuje najbardziej przewidywalny wzorzec -- stopniowy, monotoniczny spadek Accuracy od 17,67\% ($Q = 100$) do 12\% ($Q = 10$).
-
-    \item \textbf{AVIF -- niestabilność}: Format AVIF wykazuje nieregularne wahania, choć ogólny trend jest spadkowy. Najwyższe wartości Accuracy (19,33\%) uzyskano zarówno przy $Q = 100$ jak i~$Q = 50$.
-
-    \item \textbf{Próg degradacji}: Dla wszystkich formatów wyraźny spadek jakości następuje przy $Q \leq 10$, z~JPEG wykazującym najostrzejszy spadek (z~19,33\% do 10,67\% między $Q = 30$ a~$Q = 10$).
-\end{enumerate}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\textwidth]{plots/exp_b_accuracy.pdf}
-\caption{Eksperyment~B: Accuracy w~funkcji poziomu jakości danych testowych}
-\label{fig:exp_b_accuracy}
-\end{figure}
-
-Na Rysunku~\ref{fig:combined_ab} przedstawiono porównanie obu eksperymentów na jednym wykresie, co ułatwia analizę różnic między scenariuszami.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{plots/combined_ab.pdf}
-\caption{Porównanie Eksperymentu~A (trening na skompresowanych) i~B (test na skompresowanych)}
-\label{fig:combined_ab}
-\end{figure}
+% \subsection{Eksperyment B: Odporność modelu na kompresję wejścia}
+%
+% W~Tabeli~\ref{tab:exp_b} przedstawiono wyniki Eksperymentu~B. Dla każdego formatu wytrenowano oddzielny model na danych oryginalnych (PNG), a~następnie przetestowano go na danych skompresowanych z~różnymi poziomami jakości.
+%
+% \begin{table}[H]
+% \centering
+% \caption{Wyniki Eksperymentu~B: trening na oryginałach, test na danych skompresowanych (zadanie Syntax, ResNet-50)}
+% \label{tab:exp_b}
+% \begin{tabular}{llcc}
+% \toprule
+% Format & $Q$ (test) & Accuracy [\%] & F1 macro \\
+% \midrule
+% JPEG & 100 & 15,00 & 0,075 \\
+% JPEG & 85  & 18,00 & 0,085 \\
+% JPEG & 70  & 19,33 & 0,094 \\
+% JPEG & 50  & \textbf{20,00} & \textbf{0,096} \\
+% JPEG & 30  & 19,33 & 0,091 \\
+% JPEG & 10  & 10,67 & 0,046 \\
+% \midrule
+% JPEG2000 & 100 & \textbf{17,67} & 0,081 \\
+% JPEG2000 & 85  & 16,33 & 0,084 \\
+% JPEG2000 & 70  & 15,67 & 0,077 \\
+% JPEG2000 & 50  & 16,00 & 0,072 \\
+% JPEG2000 & 30  & 13,67 & 0,060 \\
+% JPEG2000 & 10  & 12,00 & 0,056 \\
+% \midrule
+% AVIF & 100 & \textbf{19,33} & 0,045 \\
+% AVIF & 85  & 15,67 & 0,039 \\
+% AVIF & 70  & 18,33 & 0,043 \\
+% AVIF & 50  & 19,33 & 0,049 \\
+% AVIF & 30  & 14,67 & 0,028 \\
+% AVIF & 10  & 14,00 & 0,032 \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+%
+% Analiza wyników Eksperymentu~B prowadzi do następujących obserwacji:
+%
+% \begin{enumerate}
+%     \item \textbf{JPEG -- zaskakujący wzrost z~kompresją}: Model JPEG wykazuje nietypowy wzrost Accuracy ze wzrostem kompresji (od 15\% przy $Q = 100$ do 20\% przy $Q = 50$), dopiero przy agresywnej kompresji $Q = 10$ następuje spadek do 10,67\%. Może to sugerować, że umiarkowana kompresja JPEG działa jako forma regularyzacji, usuwając szum i~nieistotne szczegóły.
+%
+%     \item \textbf{JPEG2000 -- monotoniczny spadek}: Format JPEG2000 wykazuje najbardziej przewidywalny wzorzec -- stopniowy, monotoniczny spadek Accuracy od 17,67\% ($Q = 100$) do 12\% ($Q = 10$).
+%
+%     \item \textbf{AVIF -- niestabilność}: Format AVIF wykazuje nieregularne wahania, choć ogólny trend jest spadkowy. Najwyższe wartości Accuracy (19,33\%) uzyskano zarówno przy $Q = 100$ jak i~$Q = 50$.
+%
+%     \item \textbf{Próg degradacji}: Dla wszystkich formatów wyraźny spadek jakości następuje przy $Q \leq 10$, z~JPEG wykazującym najostrzejszy spadek (z~19,33\% do 10,67\% między $Q = 30$ a~$Q = 10$).
+% \end{enumerate}
+%
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=0.85\textwidth]{plots/exp_b_accuracy.pdf}
+% \caption{Eksperyment~B: Accuracy w~funkcji poziomu jakości danych testowych}
+% \label{fig:exp_b_accuracy}
+% \end{figure}
+%
+% Na Rysunku~\ref{fig:combined_ab} przedstawiono porównanie obu eksperymentów na jednym wykresie, co ułatwia analizę różnic między scenariuszami.
+%
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=\textwidth]{plots/combined_ab.pdf}
+% \caption{Porównanie Eksperymentu~A (trening na skompresowanych) i~B (test na skompresowanych)}
+% \label{fig:combined_ab}
+% \end{figure}
 
 \subsection{Porównanie formatów kompresji}
 
-Na podstawie wyników obu eksperymentów oraz metryk jakości kompresji (Tabela~\ref{tab:quality_metrics}) można sformułować następujące obserwacje:
+Na podstawie wyników eksperymentu oraz metryk jakości kompresji (Tabela~\ref{tab:quality_metrics}) można sformułować następujące obserwacje:
 
 \begin{itemize}
-    \item \textbf{JPEG} wykazuje paradoksalny, ale korzystny trend w~Eksperymencie~A -- najwyższy wynik (21,67\%) uzyskano przy $Q = 30$, co sugeruje efekt regularizacji poprzez umiarkowaną kompresję. Format ten charakteryzuje się przewidywalnym zachowaniem i może być bezpiecznie stosowany nawet przy $Q = 30$.
+    \item \textbf{JPEG} wykazuje paradoksalny, ale korzystny trend -- najwyższy wynik (21,67\%) uzyskano przy $Q = 30$, co sugeruje efekt regularizacji poprzez umiarkowaną kompresję. Format ten charakteryzuje się przewidywalnym zachowaniem i może być bezpiecznie stosowany nawet przy $Q = 30$.
 
-    \item \textbf{JPEG2000} osiągnął najwyższy wynik w całym badaniu (22,67\% przy $Q = 30$), jednak jego niestabilność (różnice ponad 6 punktów procentowych między poziomami jakości) czyni go mniej przewidywalnym niż JPEG. W~Eksperymencie~B wykazuje monotoniczny spadek, co jest zgodne z oczekiwaniami.
+    \item \textbf{JPEG2000} osiągnął najwyższy wynik w całym badaniu (22,67\% przy $Q = 30$), jednak jego niestabilność (różnice ponad 6 punktów procentowych między poziomami jakości) czyni go mniej przewidywalnym niż JPEG.
 
-    \item \textbf{AVIF} oferuje zdecydowanie najlepszą efektywność kompresji (do 158$\times$ przy $Q = 10$) i~najwyższy wynik F1 macro (0,102 przy $Q = 50$). Jego niestabilność w~Eksperymencie~A (spadek z 22,67\% przy $Q = 50$ do 16,67\% przy $Q = 30$) wymaga jednak ostrożności przy doborze poziomu kompresji.
+    \item \textbf{AVIF} osiąga porównywalną efektywność kompresji do JPEG (np.~przy $Q = 50$: oba 9,64$\times$) i~najwyższy wynik F1 macro (0,102 przy $Q = 50$). Jego niestabilność (spadek z 22,67\% przy $Q = 50$ do 16,67\% przy $Q = 30$) wymaga jednak ostrożności przy doborze poziomu kompresji.
 
-    \item \textbf{Brak istotnych różnic między formatami}: W~obu eksperymentach bezwzględne różnice między formatami przy tym samym poziomie jakości wynoszą zaledwie 2--5 punktów procentowych, co przy ograniczonej wielkości zbioru testowego (300 obrazów) jest niewielkie. Wszystkie formaty pozwalają na osiągnięcie wyników około 5--6 krotnie wyższych od poziomu losowego.
+    \item \textbf{Brak istotnych różnic między formatami}: Bezwzględne różnice między formatami przy tym samym poziomie jakości wynoszą zaledwie 2--5 punktów procentowych, co przy ograniczonej wielkości zbioru testowego (300 obrazów) jest niewielkie. Wszystkie formaty pozwalają na osiągnięcie wyników około 5--6 krotnie wyższych od poziomu losowego.
 \end{itemize}
 
 \clearpage
@@ -474,13 +474,11 @@ Na podstawie wyników obu eksperymentów oraz metryk jakości kompresji (Tabela~
 Na podstawie przeprowadzonych eksperymentów sformułowano następujące wnioski w~odniesieniu do postawionych hipotez:
 
 \begin{enumerate}
-    \item \textbf{Weryfikacja H1 (JPEG2000 vs JPEG)}: Hipoteza nie została jednoznacznie potwierdzona. Format JPEG2000 osiągnął co prawda najwyższy wynik w całym badaniu (22,67\% przy $Q = 30$), jednak jego wyniki są bardziej niestabilne niż w przypadku JPEG. Format JPEG wykazuje przewidywalny, paradoksalnie pozytywny trend z efektem regularizacji przy $Q = 30$ (21,67\%). W~Eksperymencie~B JPEG2000 wykazywał monotoniczny spadek, podczas gdy JPEG był bardziej stabilny.
+    \item \textbf{Weryfikacja H1 (JPEG2000 vs JPEG)}: Hipoteza nie została jednoznacznie potwierdzona. Format JPEG2000 osiągnął co prawda najwyższy wynik w całym badaniu (22,67\% przy $Q = 30$), jednak jego wyniki są bardziej niestabilne niż w przypadku JPEG. Format JPEG wykazuje przewidywalny, paradoksalnie pozytywny trend z efektem regularizacji przy $Q = 30$ (21,67\%).
 
-    \item \textbf{Weryfikacja H2 (AVIF)}: Hipoteza potwierdzona. AVIF osiąga znacząco wyższe współczynniki kompresji (do 158$\times$ przy $Q = 10$ vs 40$\times$ dla JPEG) przy zachowaniu porównywalnej, a~nawet wyższej skuteczności modeli. W~Eksperymencie~A AVIF uzyskał najlepszy wynik F1 macro (0,102 przy $Q = 50$) oraz najwyższy Accuracy (22,67\% przy $Q = 50$, ex aequo z JPEG2000).
+    \item \textbf{Weryfikacja H2 (AVIF)}: Hipoteza częściowo potwierdzona. AVIF osiąga porównywalne współczynniki kompresji do JPEG (31,86$\times$ vs 31,78$\times$ przy $Q = 10$) przy zachowaniu porównywalnej skuteczności modeli. AVIF uzyskał najlepszy wynik F1 macro (0,102 przy $Q = 50$) oraz najwyższy Accuracy (22,67\% przy $Q = 50$, ex aequo z JPEG2000).
 
-    \item \textbf{Weryfikacja H3 (próg degradacji)}: Hipoteza potwierdzona częściowo. Dla wszystkich formatów poziom $Q = 10$ stanowi próg ryzyka -- szczególnie widoczne jest to w~Eksperymencie~B dla JPEG (spadek do 10,67\%). Jednak w~Eksperymencie~A nie zaobserwowano spadku przy $Q = 10$ dla AVIF (22,33\%) i JPEG2000 (20,33\%), co wskazuje na złożoną zależność między kompresją danych treningowych a skutecznością modelu.
-
-    \item \textbf{Eksperyment A vs B}: W~Eksperymencie~A modele trenowane na danych skompresowanych osiągały ogólnie lepsze wyniki niż w~Eksperymencie~B (trening na oryginałach). Najwyższe wyniki w całym badaniu (22,67\%) uzyskano dla AVIF $Q = 50$ oraz JPEG2000 $Q = 30$ w Eksperymencie~A. Sugeruje to, że kompresja danych treningowych nie jest bardziej szkodliwa niż kompresja danych wejściowych w fazie inferencji, a w niektórych przypadkach może działać jako forma regularizacji.
+    \item \textbf{Weryfikacja H3 (próg degradacji)}: Hipoteza potwierdzona częściowo. Dla wszystkich formatów poziom $Q = 10$ stanowi potencjalny próg ryzyka -- daje wyniki istotnie gorsze niż optymalne (JPEG: 17,33\% vs 21,67\%). Jednak nie zaobserwowano spadku przy $Q = 10$ dla AVIF (22,33\%) i JPEG2000 (20,33\%), co wskazuje na złożoną zależność między kompresją danych treningowych a skutecznością modelu.
 
     \item \textbf{Ogólna skuteczność}: Wartości Accuracy na poziomie 16--23\% odzwierciedlają trudność zadania klasyfikacji 26 segmentów naczyniowych. Wyniki są około 5--6 krotnie wyższe od poziomu losowego (3,8\%), co potwierdza, że modele uczą się diagnostycznie istotnych cech. Niski F1 macro (0,043--0,102) wynika z niezrównoważonego rozkładu klas.
 \end{enumerate}
@@ -492,11 +490,11 @@ Na podstawie przeprowadzonych eksperymentów sformułowano następujące wnioski
 \section{Podsumowanie}
 \label{sec:podsumowanie}
 
-W~niniejszej pracy przeprowadzono kompleksowe badanie wpływu kompresji stratnej obrazów angiografii wieńcowej na skuteczność modelu głębokiego uczenia ResNet-50 w~zadaniu klasyfikacji 26 segmentów naczyniowych według schematu SYNTAX Score. Zbadano trzy formaty kompresji (JPEG, JPEG2000, AVIF) na sześciu poziomach jakości ($Q = 100, 85, 70, 50, 30, 10$) w~dwóch komplementarnych scenariuszach eksperymentalnych.
+W~niniejszej pracy przeprowadzono badanie wpływu kompresji stratnej obrazów angiografii wieńcowej na skuteczność modelu głębokiego uczenia ResNet-50 w~zadaniu klasyfikacji 26 segmentów naczyniowych według schematu SYNTAX Score. Zbadano trzy formaty kompresji (JPEG, JPEG2000, AVIF) na sześciu poziomach jakości ($Q = 100, 85, 70, 50, 30, 10$).
 
 \subsection{Realizacja celów}
 
-Zrealizowano wszystkie cele szczegółowe pracy: (1)~porównano trzy formaty kompresji pod kątem metryk jakości obrazu, (2)~zbadano wpływ kompresji danych treningowych na dokładność modelu, (3)~zbadano odporność modelu na kompresję danych wejściowych, (4)~zidentyfikowano $Q = 10$ jako próg istotnej degradacji, (5)~sformułowano rekomendacje praktyczne.
+Zrealizowano wszystkie cele szczegółowe pracy: (1)~porównano trzy formaty kompresji pod kątem metryk jakości obrazu, (2)~zbadano wpływ kompresji danych treningowych na dokładność modelu, (3)~zidentyfikowano poziomy kompresji zapewniający maksymalną redukcję rozmiaru przy minimalnej utracie dokładności klasyfikacji, (4)~sformułowano rekomendacje praktyczne.
 
 \subsection{Rekomendacje praktyczne}
 
@@ -505,7 +503,7 @@ Na podstawie uzyskanych wyników można sformułować następujące rekomendacje
 \begin{itemize}
     \item Dla treningu modeli AI zaleca się stosowanie umiarkowanej kompresji: $Q = 30$ dla JPEG (wynik 21,67\%), $Q = 50$ dla AVIF (wynik 22,67\%) oraz $Q \geq 70$ dla JPEG2000 ze względu na stabilność. Poziom $Q = 10$ powinien być unikany ze względu na nieprzewidywalność wyników.
 
-    \item Format AVIF jest rekomendowany w~scenariuszach wymagających wysokiej kompresji (np.~telemedycyna) -- przy $Q = 50$ osiąga kompresję 26$\times$ przy najwyższej skuteczności modelu w całym badaniu (22,67\%, F1 = 0,102).
+    \item Format AVIF jest rekomendowany w~scenariuszach wymagających wysokiej kompresji -- przy $Q = 50$ osiąga kompresję 9,64$\times$ przy najwyższej skuteczności modelu w całym badaniu (22,67\%, F1 = 0,102).
 
     \item Format JPEG, pomimo prostoty, zapewnia przewidywalne wyniki z~efektem regularizacji przy $Q = 30$ i może być bezpiecznie stosowany w~systemach AI.
 

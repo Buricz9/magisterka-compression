@@ -16,6 +16,27 @@
 
 > **Uzasadnienie:** Za mało rzeczy do publikacji - potrzeba rozszerzenia eksperymentów
 
+### 26.03.2026 - Własna diagnoza problemu z datasetem
+
+**Odkryte problemy podczas analizy wyników:**
+- 2 klasy brakuje w zbiorze treningowym (11, 25)
+- 18× imbalance między klasami (108 vs 6 próbek)
+- Accuracy 18-20% zamiast oczekiwanych 50-70%
+- JPEG2000 ma bardzo słabą kompresję (CR=1.10×)
+
+**Co udało mi się zrobić:**
+- ✅ Wszystkie eksperymenty A ukończone (ResNet-50 + EfficientNet-B0)
+- ✅ 6 plików CSV z wynikami
+- ✅ Checkpointi zapisane poprawnie
+- ✅ Kod bez błędów
+
+**Co wymaga konsultacji:**
+- Co z brakującymi klasami 11, 25?
+- Co z imbalance 18×?
+- Czy kontynuować z ARCADE?
+
+**Status:** Czekam na wytyczne promotora co dalej
+
 ---
 
 ## Status Projektu
@@ -26,12 +47,12 @@
 | Kompresja JPEG2000 | ✅ Zrobione | ✅ | Naprawiono błąd CR (pliki ~33KB) |
 | Kompresja AVIF | ✅ Zrobione | ✅ | Wszystkie poziomy Q |
 | Metryki jakości (PSNR/SSIM/CR) | ✅ Zrobione | ✅ | Wykresy PDF gotowe |
-| Eksperyment A ResNet-50 - JPEG | ✅ Zrobione | ✅ | Wyniki w CSV |
-| Eksperyment A ResNet-50 - AVIF | ✅ Zrobione | ✅ | Wyniki w CSV |
-| Eksperyment A ResNet-50 - JPEG2000 | ⏳ W trakcie | ✅ | Uruchomiony na Colab |
-| Eksperyment A EfficientNet-B0 - JPEG | ❌ Do odpalenia | ✅ | Kod gotowy, brak wyników |
-| Eksperyment A EfficientNet-B0 - JPEG2000 | ❌ Do odpalenia | ✅ | Kod gotowy, brak wyników |
-| Eksperyment A EfficientNet-B0 - AVIF | ❌ Do odpalenia | ✅ | Kod gotowy, brak wyników |
+| Eksperyment A ResNet-50 - JPEG | ✅ Zrobione | ✅ | Wyniki w CSV (accuracy: 19.83%) |
+| Eksperyment A ResNet-50 - AVIF | ✅ Zrobione | ✅ | Wyniki w CSV (accuracy: 21.06%) |
+| Eksperyment A ResNet-50 - JPEG2000 | ✅ Zrobione | ✅ | Wyniki w CSV (accuracy: 19.22%) |
+| Eksperyment A EfficientNet-B0 - JPEG | ✅ Zrobione | ✅ | Wyniki w CSV (accuracy: 18.39%) |
+| Eksperyment A EfficientNet-B0 - JPEG2000 | ✅ Zrobione | ✅ | Wyniki w CSV (accuracy: 18.28%) |
+| Eksperyment A EfficientNet-B0 - AVIF | ✅ Zrobione | ✅ | Wyniki w CSV (accuracy: 19.00%) |
 | Analiza statystyczna (p-value) | ❌ Do odpalenia | ✅ | Kod kompletny (888 linii), brak wyników EfficientNet |
 | Feature maps analysis | ❌ Do odpalenia | ✅ | Kod kompletny (680 linii), są checkpointy |
 | ARCADE dataset | ✅ Zrobione | ✅ | 3000 obrazów, 26 klas |

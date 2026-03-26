@@ -62,16 +62,14 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
             # CR <= 1 means no compression or file grew; use lossless
             img.save(output_path, "JPEG2000")
         else:
-            # Convert compression ratio to bits per pixel (bpp)
-            # For RGB: 24 bpp uncompressed (8 bits * 3 channels)
-            # bpp = 24 / CR
-            bpp = 24.0 / compression_ratio
+            # Use compression ratio directly (not bpp!)
+            # quality_mode="rates" expects compression ratio, not bits per pixel
             img.save(
                 output_path,
                 "JPEG2000",
                 irreversible=True,
                 quality_mode="rates",
-                quality_layers=[bpp],
+                quality_layers=[compression_ratio],
             )
         return True
     except Exception as e:

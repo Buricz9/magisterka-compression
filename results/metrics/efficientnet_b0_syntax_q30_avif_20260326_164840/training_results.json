@@ -1,0 +1,118 @@
+{
+  "experiment_id": "efficientnet_b0_syntax_q30_avif_20260326_164840",
+  "model_name": "efficientnet_b0",
+  "task": "syntax",
+  "train_quality": 30,
+  "val_quality": null,
+  "train_format": "avif",
+  "val_format": null,
+  "best_epoch": 3,
+  "best_val_acc": 20.0,
+  "history": {
+    "train_loss": [
+      3.411890625,
+      2.4850833740234375,
+      2.0723424072265626,
+      1.7830010681152344,
+      1.5695557250976562,
+      1.3577771606445312,
+      1.1443942260742188,
+      0.9236873321533203,
+      0.8174673652648926,
+      0.6424266586303711,
+      0.5572308540344239,
+      0.45601491403579714,
+      0.3741928195953369
+    ],
+    "train_acc": [
+      9.6,
+      22.2,
+      31.5,
+      40.1,
+      48.9,
+      55.1,
+      63.3,
+      71.8,
+      76.8,
+      84.3,
+      86.4,
+      89.8,
+      93.9
+    ],
+    "val_loss": [
+      3.227528076171875,
+      2.904822998046875,
+      2.8854815673828127,
+      2.92009521484375,
+      2.858211669921875,
+      2.9846307373046876,
+      2.9685333251953123,
+      3.035216064453125,
+      3.0949627685546877,
+      3.1194635009765626,
+      3.1905636596679687,
+      3.205640869140625,
+      3.1904592895507813
+    ],
+    "val_acc": [
+      12.0,
+      15.5,
+      20.0,
+      15.0,
+      17.5,
+      15.5,
+      17.0,
+      15.5,
+      16.5,
+      19.0,
+      14.5,
+      17.5,
+      16.5
+    ]
+  },
+  "use_amp": true,
+  "reproducibility": {
+    "random_seed": 42,
+    "system": {
+      "python_version": "3.12.13",
+      "pytorch_version": "2.10.0+cu128",
+      "torchvision_version": "0.25.0+cu128",
+      "cuda_version": "12.8",
+      "cuda_available": true,
+      "timm_version": "1.0.25",
+      "numpy_version": "2.0.2",
+      "sklearn_version": "1.6.1"
+    },
+    "device": "cuda"
+  },
+  "hyperparameters": {
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "batch_size": 16,
+    "num_epochs": 50,
+    "optimizer": "Adam",
+    "scheduler": "CosineAnnealingLR",
+    "early_stopping_patience": 10,
+    "criterion": "CrossEntropyLoss"
+  },
+  "experiment_design": {
+    "data_augmentation": true,
+    "target_size": [
+      224,
+      224
+    ],
+    "normalize_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "normalize_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "num_workers": 4,
+    "pin_memory": true,
+    "persistent_workers": true
+  }
+}

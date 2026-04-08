@@ -39,9 +39,16 @@ __pycache__/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Results - opcjonalnie możesz commitować CSV
-# results/
-# !results/.gitkeep
+# Obrazy (poza dataset/ który już jest ignorowany)
+*.jpg
+*.jpeg
+*.png
+*.avif
+*.jp2
+*.webp
+*.bmp
+*.tiff
+*.tif
 
 # OS files
 .DS_Store

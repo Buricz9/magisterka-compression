@@ -1,0 +1,134 @@
+{
+  "experiment_id": "efficientnet_b0_syntax_q85_avif_20260326_164231",
+  "model_name": "efficientnet_b0",
+  "task": "syntax",
+  "train_quality": 85,
+  "val_quality": null,
+  "train_format": "avif",
+  "val_format": null,
+  "best_epoch": 7,
+  "best_val_acc": 21.5,
+  "history": {
+    "train_loss": [
+      3.390285400390625,
+      2.4821627807617186,
+      2.0578057250976562,
+      1.789822296142578,
+      1.591161376953125,
+      1.3672962646484375,
+      1.1324344482421875,
+      0.934063232421875,
+      0.7870252838134766,
+      0.6315654582977295,
+      0.5524657173156738,
+      0.4459745178222656,
+      0.39037743759155275,
+      0.3465034170150757,
+      0.285193564414978,
+      0.25212447357177736,
+      0.21601894950866699
+    ],
+    "train_acc": [
+      10.1,
+      21.6,
+      33.1,
+      41.0,
+      48.0,
+      57.2,
+      65.0,
+      73.1,
+      79.1,
+      84.5,
+      87.1,
+      89.6,
+      92.1,
+      92.4,
+      94.3,
+      95.4,
+      96.8
+    ],
+    "val_loss": [
+      3.2387493896484374,
+      2.9395574951171874,
+      2.914876708984375,
+      2.9148553466796874,
+      2.8753167724609376,
+      2.9564312744140624,
+      2.950924835205078,
+      2.9923501586914063,
+      3.0140785217285155,
+      3.171667022705078,
+      3.244888381958008,
+      3.2653057861328123,
+      3.2212318420410155,
+      3.2918301010131836,
+      3.4208516120910644,
+      3.4311767578125,
+      3.4891743087768554
+    ],
+    "val_acc": [
+      10.0,
+      15.5,
+      20.0,
+      20.0,
+      18.0,
+      17.0,
+      21.5,
+      18.0,
+      18.0,
+      18.0,
+      15.5,
+      18.0,
+      20.0,
+      20.0,
+      17.0,
+      19.5,
+      19.0
+    ]
+  },
+  "use_amp": true,
+  "reproducibility": {
+    "random_seed": 42,
+    "system": {
+      "python_version": "3.12.13",
+      "pytorch_version": "2.10.0+cu128",
+      "torchvision_version": "0.25.0+cu128",
+      "cuda_version": "12.8",
+      "cuda_available": true,
+      "timm_version": "1.0.25",
+      "numpy_version": "2.0.2",
+      "sklearn_version": "1.6.1"
+    },
+    "device": "cuda"
+  },
+  "hyperparameters": {
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "batch_size": 16,
+    "num_epochs": 50,
+    "optimizer": "Adam",
+    "scheduler": "CosineAnnealingLR",
+    "early_stopping_patience": 10,
+    "criterion": "CrossEntropyLoss"
+  },
+  "experiment_design": {
+    "data_augmentation": true,
+    "target_size": [
+      224,
+      224
+    ],
+    "normalize_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "normalize_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "num_workers": 4,
+    "pin_memory": true,
+    "persistent_workers": true
+  }
+}

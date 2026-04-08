@@ -1,0 +1,122 @@
+{
+  "experiment_id": "efficientnet_b0_syntax_q100_jpeg2000_20260326_160225",
+  "model_name": "efficientnet_b0",
+  "task": "syntax",
+  "train_quality": 100,
+  "val_quality": null,
+  "train_format": "jpeg2000",
+  "val_format": null,
+  "best_epoch": 4,
+  "best_val_acc": 20.0,
+  "history": {
+    "train_loss": [
+      3.40360888671875,
+      2.467967224121094,
+      2.064022674560547,
+      1.7647017211914062,
+      1.56358203125,
+      1.3652062225341797,
+      1.117793312072754,
+      0.9301641387939453,
+      0.8080194320678711,
+      0.6216005554199219,
+      0.5399573707580566,
+      0.42971631240844727,
+      0.3684934997558594,
+      0.33824680995941164
+    ],
+    "train_acc": [
+      10.6,
+      22.3,
+      30.7,
+      42.5,
+      47.9,
+      55.9,
+      65.3,
+      72.4,
+      79.2,
+      85.8,
+      87.9,
+      91.4,
+      93.4,
+      93.0
+    ],
+    "val_loss": [
+      3.24708251953125,
+      2.9321136474609375,
+      2.894872741699219,
+      2.9078738403320314,
+      2.8660748291015623,
+      2.9674267578125,
+      2.9966812133789062,
+      3.0395135498046875,
+      3.0157894897460937,
+      3.1687075805664064,
+      3.2300096130371094,
+      3.2510484313964843,
+      3.2027041625976564,
+      3.2779817962646485
+    ],
+    "val_acc": [
+      11.5,
+      15.5,
+      19.5,
+      20.0,
+      19.5,
+      18.0,
+      17.0,
+      16.5,
+      18.0,
+      17.0,
+      16.0,
+      18.0,
+      19.0,
+      17.0
+    ]
+  },
+  "use_amp": true,
+  "reproducibility": {
+    "random_seed": 42,
+    "system": {
+      "python_version": "3.12.13",
+      "pytorch_version": "2.10.0+cu128",
+      "torchvision_version": "0.25.0+cu128",
+      "cuda_version": "12.8",
+      "cuda_available": true,
+      "timm_version": "1.0.25",
+      "numpy_version": "2.0.2",
+      "sklearn_version": "1.6.1"
+    },
+    "device": "cuda"
+  },
+  "hyperparameters": {
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "batch_size": 16,
+    "num_epochs": 50,
+    "optimizer": "Adam",
+    "scheduler": "CosineAnnealingLR",
+    "early_stopping_patience": 10,
+    "criterion": "CrossEntropyLoss"
+  },
+  "experiment_design": {
+    "data_augmentation": true,
+    "target_size": [
+      224,
+      224
+    ],
+    "normalize_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "normalize_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "num_workers": 4,
+    "pin_memory": true,
+    "persistent_workers": true
+  }
+}

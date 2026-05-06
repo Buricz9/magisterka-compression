@@ -82,14 +82,14 @@ def run_experiment_b(model_name, task, quality_levels, num_epochs, batch_size, d
                                               batch_size=batch_size, num_workers=config.NUM_WORKERS)
         test_metrics = evaluate_model(model, test_loader, device)
 
-        results.append({
+        row = {
             'experiment_id': experiment_id,
             'format': format,
             'train_quality': 'baseline',
             'test_quality': quality,
-            'test_accuracy': test_metrics['accuracy'],
-            'test_f1_macro': test_metrics['f1_macro']
-        })
+        }
+        row.update({f'test_{k}': v for k, v in test_metrics.items()})
+        results.append(row)
 
     # Save results
     df = pd.DataFrame(results)

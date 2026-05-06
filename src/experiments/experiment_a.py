@@ -37,18 +37,20 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size, d
         print(f"Training on {format.upper()} Q={quality}")
         print(f"{'='*80}")
 
-        # Train on compressed quality
+        # Train AND validate on the same compressed domain so the best
+        # checkpoint reflects model quality on the training domain rather
+        # than cross-domain generalization. Test stays on baseline PNG.
         training_results = train_model(
             model_name=model_name,
             task=task_param,
             train_quality=quality,
-            val_quality=None,  # Validate on baseline
+            val_quality=quality,
             num_epochs=num_epochs,
             batch_size=batch_size,
             learning_rate=config.LEARNING_RATE,
             device=device,
             train_format=format,
-            val_format=None
+            val_format=format,
         )
 
         # Load best model and evaluate on test
@@ -75,15 +77,16 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size, d
 
         test_metrics = evaluate_model(model, test_loader, device)
 
-        results.append({
+        row = {
             'experiment_id': experiment_id,
             'format': format,
             'train_quality': quality,
             'test_quality': 'baseline',
-            'best_val_acc': training_results['best_val_acc'],
-            'test_accuracy': test_metrics['accuracy'],
-            'test_f1_macro': test_metrics['f1_macro']
-        })
+            'best_val_score': training_results['best_val_score'],
+            'primary_metric': training_results['primary_metric'],
+        }
+        row.update({f'test_{k}': v for k, v in test_metrics.items()})
+        results.append(row)
 
     # Save results
     df = pd.DataFrame(results)

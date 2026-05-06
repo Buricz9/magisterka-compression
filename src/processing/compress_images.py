@@ -43,34 +43,64 @@ def compress_image_jpeg(input_path, output_path, quality):
 
 
 def compress_image_jpeg2000(input_path, output_path, compression_ratio):
-    """Compress to JPEG2000 format using target compression ratio.
+    """Compress to JPEG2000 to match a target compression ratio.
 
-    Converts compression ratio to bits per pixel (bpp) for quality_layers.
-    For RGB images: bpp = 24 / compression_ratio (where 24 = 8 bits * 3 channels)
-
-    Args:
-        input_path: Path to input image
-        output_path: Path for output JPEG2000 file
-        compression_ratio: Target compression ratio (original_size / compressed_size)
+    Pillow/OpenJPEG's interpretation of `quality_layers` in `quality_mode="rates"`
+    systematically under-compresses (~4x off target). To get true CR matching,
+    we binary-search the rate parameter against the resulting on-disk size,
+    analogous to the AVIF code path.
     """
     try:
         img = Image.open(input_path)
         if img.mode != "RGB":
             img = img.convert("RGB")
 
+        original_size = input_path.stat().st_size
+
         if compression_ratio <= 1.0:
-            # CR <= 1 means no compression or file grew; use lossless
             img.save(output_path, "JPEG2000")
-        else:
-            # Use compression ratio directly (not bpp!)
-            # quality_mode="rates" expects compression ratio, not bits per pixel
+            return True
+
+        target_size = original_size / compression_ratio
+
+        # Search rate in [1, 1000]. Higher rate -> smaller file (more compression).
+        lo, hi = 1.0, 1000.0
+        best_rate = compression_ratio
+        best_diff = float("inf")
+        max_iterations = 20
+        tolerance = 0.05 * target_size
+
+        for _ in range(max_iterations):
+            mid = (lo + hi) / 2.0
             img.save(
                 output_path,
                 "JPEG2000",
                 irreversible=True,
                 quality_mode="rates",
-                quality_layers=[compression_ratio],
+                quality_layers=[mid],
             )
+            actual_size = output_path.stat().st_size
+            diff = abs(actual_size - target_size)
+
+            if diff < best_diff:
+                best_diff = diff
+                best_rate = mid
+
+            if diff < tolerance:
+                break
+
+            if actual_size > target_size:
+                lo = mid  # need more compression -> higher rate
+            else:
+                hi = mid
+
+        img.save(
+            output_path,
+            "JPEG2000",
+            irreversible=True,
+            quality_mode="rates",
+            quality_layers=[best_rate],
+        )
         return True
     except Exception as e:
         print(f"Error (JPEG2000): {input_path.name}: {e}")

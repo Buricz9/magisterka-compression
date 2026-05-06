@@ -10,7 +10,7 @@ from tqdm import tqdm
 import argparse
 import json
 from datetime import datetime
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, average_precision_score, hamming_loss
 import numpy as np
 import platform
 from torch import __version__ as torch_version
@@ -42,25 +42,39 @@ def create_model(model_name, num_classes):
     return timm.create_model(model_name, pretrained=True, num_classes=num_classes)
 
 
-def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None, use_amp=True):
+def _epoch_score(outputs_all, labels_all, multi_label):
+    """Primary epoch-level score for early stopping / best checkpoint.
+
+    Multi-label: macro F1 at threshold 0.5 (in %).
+    Single-label: top-1 accuracy (in %).
+    """
+    if multi_label:
+        preds = (outputs_all > 0).astype(np.int8)  # logits > 0 == sigmoid > 0.5
+        return 100.0 * f1_score(labels_all, preds, average='macro', zero_division=0)
+    return 100.0 * accuracy_score(labels_all, outputs_all.argmax(axis=1))
+
+
+def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None, use_amp=True, multi_label=False):
     """Train for one epoch with optional AMP."""
     model.train()
-    running_loss, correct, total = 0.0, 0, 0
+    running_loss, total = 0.0, 0
+    out_chunks, lbl_chunks = [], []
 
     for images, labels, _ in tqdm(dataloader, desc="Training"):
-        images, labels = images.to(device), labels.to(device)
+        images = images.to(device, non_blocking=True)
+        labels = labels.to(device, non_blocking=True)
+        if multi_label:
+            labels = labels.float()
 
         if scaler is not None:
-            # Mixed precision training
             with autocast(device_type=device.type, enabled=use_amp):
                 outputs = model(images)
                 loss = criterion(outputs, labels)
-            optimizer.zero_grad(set_to_none=True)  # More efficient than zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
         else:
-            # Standard training
             optimizer.zero_grad(set_to_none=True)
             outputs = model(images)
             loss = criterion(outputs, labels)
@@ -68,54 +82,89 @@ def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None, us
             optimizer.step()
 
         running_loss += loss.item() * images.size(0)
-        _, predicted = outputs.max(1)
-        total += labels.size(0)
-        correct += predicted.eq(labels).sum().item()
+        total += images.size(0)
+        out_chunks.append(outputs.detach().float().cpu().numpy())
+        lbl_chunks.append(labels.detach().cpu().numpy())
 
-    return running_loss / total, 100. * correct / total
+    outputs_all = np.concatenate(out_chunks)
+    labels_all = np.concatenate(lbl_chunks)
+    score = _epoch_score(outputs_all, labels_all, multi_label)
+    return running_loss / total, score
 
 
-def validate(model, dataloader, criterion, device, use_amp=True):
+def validate(model, dataloader, criterion, device, use_amp=True, multi_label=False):
     """Validate the model with optional AMP for consistency."""
     model.eval()
-    running_loss, correct, total = 0.0, 0, 0
+    running_loss, total = 0.0, 0
+    out_chunks, lbl_chunks = [], []
 
     with torch.no_grad():
         for images, labels, _ in tqdm(dataloader, desc="Validation"):
-            images, labels = images.to(device), labels.to(device)
+            images = images.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True)
+            if multi_label:
+                labels = labels.float()
 
             with autocast(device_type=device.type, enabled=use_amp):
                 outputs = model(images)
                 loss = criterion(outputs, labels)
 
             running_loss += loss.item() * images.size(0)
-            _, predicted = outputs.max(1)
-            total += labels.size(0)
-            correct += predicted.eq(labels).sum().item()
+            total += images.size(0)
+            out_chunks.append(outputs.detach().float().cpu().numpy())
+            lbl_chunks.append(labels.detach().cpu().numpy())
 
-    return running_loss / total, 100. * correct / total
+    outputs_all = np.concatenate(out_chunks)
+    labels_all = np.concatenate(lbl_chunks)
+    score = _epoch_score(outputs_all, labels_all, multi_label)
+    return running_loss / total, score
 
 
-def evaluate_model(model, dataloader, device):
-    """Evaluate model with metrics."""
+def evaluate_model(model, dataloader, device, use_amp=True):
+    """Evaluate model. Returns metrics appropriate for the task type.
+
+    Multi-label: subset_accuracy, hamming_accuracy, f1_macro, f1_micro, mAP.
+    Single-label: accuracy, f1_macro, f1_weighted.
+    """
+    multi_label = bool(getattr(dataloader.dataset, 'multi_label', False))
     model.eval()
-    all_predictions, all_labels = [], []
+    out_chunks, lbl_chunks = [], []
 
     with torch.no_grad():
         for images, labels, _ in tqdm(dataloader, desc="Evaluating"):
-            images = images.to(device)
-            outputs = model(images)
-            _, predicted = outputs.max(1)
-            all_predictions.extend(predicted.cpu().numpy())
-            all_labels.extend(labels.numpy())
+            images = images.to(device, non_blocking=True)
+            with autocast(device_type=device.type, enabled=use_amp):
+                outputs = model(images)
+            out_chunks.append(outputs.detach().float().cpu().numpy())
+            lbl_chunks.append(labels.numpy())
 
-    all_predictions = np.array(all_predictions)
-    all_labels = np.array(all_labels)
+    outputs_all = np.concatenate(out_chunks)
+    labels_all = np.concatenate(lbl_chunks)
 
+    if multi_label:
+        scores = 1.0 / (1.0 + np.exp(-outputs_all))  # sigmoid for mAP
+        preds = (outputs_all > 0).astype(np.int8)
+        # mAP only over classes with at least one positive sample
+        present = labels_all.sum(axis=0) > 0
+        if present.any():
+            map_score = float(average_precision_score(
+                labels_all[:, present], scores[:, present], average='macro'
+            ))
+        else:
+            map_score = 0.0
+        return {
+            'subset_accuracy': float((preds == labels_all).all(axis=1).mean()),
+            'hamming_accuracy': float(1.0 - hamming_loss(labels_all, preds)),
+            'f1_macro': float(f1_score(labels_all, preds, average='macro', zero_division=0)),
+            'f1_micro': float(f1_score(labels_all, preds, average='micro', zero_division=0)),
+            'map': map_score,
+        }
+
+    preds = outputs_all.argmax(axis=1)
     return {
-        'accuracy': accuracy_score(all_labels, all_predictions),
-        'f1_macro': f1_score(all_labels, all_predictions, average='macro', zero_division=0),
-        'f1_weighted': f1_score(all_labels, all_predictions, average='weighted', zero_division=0)
+        'accuracy': float(accuracy_score(labels_all, preds)),
+        'f1_macro': float(f1_score(labels_all, preds, average='macro', zero_division=0)),
+        'f1_weighted': float(f1_score(labels_all, preds, average='weighted', zero_division=0)),
     }
 
 
@@ -150,43 +199,56 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
     num_classes = train_loader.dataset.num_classes
     model = create_model(model_name, num_classes).to(device)
 
-    criterion = nn.CrossEntropyLoss()
+    multi_label = bool(getattr(train_loader.dataset, 'multi_label', False))
+    if multi_label:
+        # pos_weight handles ARCADE's 18x class imbalance in BCE
+        if hasattr(train_loader.dataset, 'compute_pos_weight'):
+            pos_weight = train_loader.dataset.compute_pos_weight().to(device)
+        else:
+            pos_weight = None
+        criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        primary_metric = 'f1_macro'
+    else:
+        criterion = nn.CrossEntropyLoss()
+        primary_metric = 'accuracy'
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=config.WEIGHT_DECAY)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
 
     # AMP scaler - only enabled for CUDA devices
     scaler = GradScaler(enabled=use_amp and device.type == 'cuda')
 
-    # Training loop
-    best_val_acc, best_epoch, patience_counter = 0.0, 0, 0
-    history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
+    # Training loop. score = F1-macro (multi-label) or top-1 accuracy (single-label), in %.
+    best_val_score, best_epoch, patience_counter = 0.0, 0, 0
+    history = {'train_loss': [], 'train_score': [], 'val_loss': [], 'val_score': []}
+    metric_label = 'F1-macro' if multi_label else 'Acc'
 
     for epoch in range(1, num_epochs + 1):
         print(f"\nEpoch {epoch}/{num_epochs}")
 
-        train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device, scaler, use_amp)
-        val_loss, val_acc = validate(model, val_loader, criterion, device, use_amp)
+        train_loss, train_score = train_epoch(model, train_loader, criterion, optimizer, device, scaler, use_amp, multi_label)
+        val_loss, val_score = validate(model, val_loader, criterion, device, use_amp, multi_label)
         scheduler.step()
 
         history['train_loss'].append(train_loss)
-        history['train_acc'].append(train_acc)
+        history['train_score'].append(train_score)
         history['val_loss'].append(val_loss)
-        history['val_acc'].append(val_acc)
+        history['val_score'].append(val_score)
 
-        print(f"Train - Loss: {train_loss:.4f}, Acc: {train_acc:.2f}%")
-        print(f"Val - Loss: {val_loss:.4f}, Acc: {val_acc:.2f}%")
+        print(f"Train - Loss: {train_loss:.4f}, {metric_label}: {train_score:.2f}%")
+        print(f"Val - Loss: {val_loss:.4f}, {metric_label}: {val_score:.2f}%")
 
-        if val_acc > best_val_acc:
-            best_val_acc, best_epoch, patience_counter = val_acc, epoch, 0
+        if val_score > best_val_score:
+            best_val_score, best_epoch, patience_counter = val_score, epoch, 0
             checkpoint_dir = config.get_checkpoint_path(experiment_id)
             checkpoint_path = checkpoint_dir / "best_model.pth"
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'val_acc': val_acc
+                'val_score': val_score,
+                'primary_metric': primary_metric,
             }, checkpoint_path)
-            print(f"Saved best model: {val_acc:.2f}%")
+            print(f"Saved best model: {val_score:.2f}% ({metric_label})")
         else:
             patience_counter += 1
             if patience_counter >= early_stopping_patience:
@@ -203,7 +265,9 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
         'train_format': train_format,
         'val_format': val_format,
         'best_epoch': best_epoch,
-        'best_val_acc': best_val_acc,
+        'best_val_score': best_val_score,
+        'primary_metric': primary_metric,
+        'multi_label': multi_label,
         'history': history,
         'use_amp': use_amp,
 
@@ -222,8 +286,9 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
             'num_epochs': num_epochs,
             'optimizer': 'Adam',
             'scheduler': 'CosineAnnealingLR',
-            'early_stopping_patience': config.EARLY_STOPPING_PATIENCE,
-            'criterion': 'CrossEntropyLoss'
+            'early_stopping_patience': early_stopping_patience,
+            'criterion': 'BCEWithLogitsLoss' if multi_label else 'CrossEntropyLoss',
+            'pos_weight_used': bool(multi_label),
         },
 
         # EXPERIMENT DESIGN
@@ -242,7 +307,7 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
     with open(results_dir / "training_results.json", 'w') as f:
         json.dump(results, f, indent=2)
 
-    print(f"\nBest Val Acc: {best_val_acc:.2f}% (epoch {best_epoch})")
+    print(f"\nBest Val {metric_label}: {best_val_score:.2f}% (epoch {best_epoch})")
     return results
 
 

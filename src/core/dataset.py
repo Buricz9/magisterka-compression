@@ -61,10 +61,11 @@ def get_transforms(split='train', target_size=(224, 224)):
 
 class ArcadeClassificationDataset(Dataset):
     """
-    ARCADE dataset for classification task.
+    ARCADE dataset for multi-label classification.
 
-    For simplicity, we'll treat each image as having a single dominant class
-    (the category that appears most frequently in that image).
+    Each angiogram contains multiple coronary artery segments from different
+    classes (1..26). The label is a multi-hot vector marking every category
+    that appears in the image's annotations.
 
     Args:
         task: "syntax" or "stenosis"
@@ -75,6 +76,8 @@ class ArcadeClassificationDataset(Dataset):
         target_size: Tuple (H, W) for resizing images
     """
 
+    multi_label = True
+
     def __init__(self, task, split, quality=None, format=None, transform=None, target_size=(224, 224)):
         self.task = task
         self.split = split
@@ -82,44 +85,33 @@ class ArcadeClassificationDataset(Dataset):
         self.format = format if format else config.DEFAULT_FORMAT
         self.target_size = target_size
 
-        # Load annotations
         self.annotations_path = config.get_annotations_path(task, split)
         with open(self.annotations_path, 'r') as f:
             self.coco_data = json.load(f)
 
-        # Parse images and create image_id to info mapping
         self.images_info = {img['id']: img for img in self.coco_data['images']}
 
-        # Parse categories and create proper label mapping
         self.categories = {cat['id']: cat['name'] for cat in self.coco_data['categories']}
         self.num_classes = len(self.categories)
 
-        # Create category_id to label_idx mapping (handles non-contiguous category IDs)
         sorted_category_ids = sorted(self.categories.keys())
         self.category_to_idx = {cat_id: idx for idx, cat_id in enumerate(sorted_category_ids)}
 
-        # Group annotations by image_id
         self.image_annotations = defaultdict(list)
         for ann in self.coco_data['annotations']:
             self.image_annotations[ann['image_id']].append(ann)
 
-        # Create mapping: image_id -> dominant category
+        # Multi-hot label per image: 1.0 for every category present in annotations
         self.image_labels = {}
         for image_id in self.images_info.keys():
             annotations = self.image_annotations[image_id]
-            if len(annotations) > 0:
-                # Find most frequent category in this image
-                category_counts = defaultdict(int)
-                for ann in annotations:
-                    category_counts[ann['category_id']] += 1
-                dominant_category = max(category_counts.items(), key=lambda x: x[1])[0]
-                # Use proper mapping instead of hardcoded offset
-                self.image_labels[image_id] = self.category_to_idx[dominant_category]
-            else:
-                # No annotations for this image, skip it
+            if not annotations:
                 continue
+            label = np.zeros(self.num_classes, dtype=np.float32)
+            for ann in annotations:
+                label[self.category_to_idx[ann['category_id']]] = 1.0
+            self.image_labels[image_id] = label
 
-        # Filter to only images with labels
         self.image_ids = list(self.image_labels.keys())
 
         # Get image directory path
@@ -134,13 +126,22 @@ class ArcadeClassificationDataset(Dataset):
     def __len__(self):
         return len(self.image_ids)
 
+    def compute_pos_weight(self):
+        """Per-class pos_weight = (#neg / #pos) for BCEWithLogitsLoss.
+
+        Classes never positive get weight 1.0 (loss contribution stays zero anyway).
+        """
+        labels = np.stack([self.image_labels[i] for i in self.image_ids])  # (N, C)
+        pos = labels.sum(axis=0)
+        neg = labels.shape[0] - pos
+        weight = np.where(pos > 0, neg / np.clip(pos, 1, None), 1.0).astype(np.float32)
+        return torch.from_numpy(weight)
+
     def __getitem__(self, idx):
-        # Get image info
         image_id = self.image_ids[idx]
         image_info = self.images_info[image_id]
 
-        # Get label
-        label = self.image_labels[image_id]
+        label = torch.from_numpy(self.image_labels[image_id])
 
         # Load image
         if self.quality is None:

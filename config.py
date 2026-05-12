@@ -12,13 +12,11 @@ DATA_ROOT = DATASET_ROOT / "arcade"
 COMPRESSED_ROOT = DATASET_ROOT / "compressed"
 MODELS_ROOT = PROJECT_ROOT / "models"
 RESULTS_ROOT = PROJECT_ROOT / "results"
-LOGS_ROOT = PROJECT_ROOT / "logs"
 PLOTS_ROOT = PROJECT_ROOT / "plots"
 
 # Dataset
 TASKS = ["syntax"]
-IMAGE_SIZE = (512, 512)
-NUM_CLASSES = {"syntax": 26}
+NUM_CLASSES = 26  # ARCADE/Syntax has 26 SYNTAX Score classes (multi-label)
 
 # Compression formats
 COMPRESSION_FORMATS = ["jpeg", "jpeg2000", "avif"]
@@ -44,12 +42,7 @@ RANDOM_SEED = 42
 
 
 def set_seed(seed: int = RANDOM_SEED):
-    """
-    Set random seed for reproducibility across all libraries.
-
-    Args:
-        seed: Random seed value
-    """
+    """Set random seed for reproducibility across all libraries."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -59,31 +52,23 @@ def set_seed(seed: int = RANDOM_SEED):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    # Required for deterministic CUDA operations on some systems
     os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
 
 
 def get_data_path(task, split, quality=None, format=None):
-    """
-    Get path to data for specific task, split, quality level, and format.
+    """Get path to data for specific task, split, quality level, and format.
 
     Args:
-        task: "syntax" or "stenosis"
+        task: "syntax"
         split: "train", "val", or "test"
         quality: None (baseline PNG) or int (10-100)
         format: "jpeg", "jpeg2000", or "avif" (only used if quality is not None)
-
-    Returns:
-        Path to images directory
     """
     if quality is None:
-        # Baseline PNG
         return DATA_ROOT / task / split / "images"
-    else:
-        # Compressed (use default format if not specified)
-        if format is None:
-            format = DEFAULT_FORMAT
-        return COMPRESSED_ROOT / format / f"q{quality}" / task / split / "images"
+    if format is None:
+        format = DEFAULT_FORMAT
+    return COMPRESSED_ROOT / format / f"q{quality}" / task / split / "images"
 
 
 def get_annotations_path(task, split):
@@ -99,7 +84,7 @@ def get_checkpoint_path(experiment_id):
 
 
 def get_results_path(experiment_id):
-    """Get path for saving results."""
+    """Get path for per-experiment metrics directory (under results/metrics/)."""
     results_dir = RESULTS_ROOT / "metrics" / experiment_id
     results_dir.mkdir(parents=True, exist_ok=True)
     return results_dir

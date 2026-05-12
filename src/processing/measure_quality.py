@@ -102,7 +102,7 @@ def measure_quality(task, split, quality_levels, format='jpeg'):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", choices=["syntax", "stenosis", "all"], default="all")
+    parser.add_argument("--task", choices=["syntax", "all"], default="all")
     parser.add_argument("--split", choices=["train", "val", "test", "all"], default="all")
     parser.add_argument("--format", choices=["jpeg", "jpeg2000", "avif", "all"], default="jpeg")
     parser.add_argument("--mvp", action="store_true")

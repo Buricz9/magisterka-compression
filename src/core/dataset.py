@@ -72,7 +72,7 @@ class ArcadeClassificationDataset(Dataset):
     that appears in the image's annotations.
 
     Args:
-        task: "syntax" or "stenosis"
+        task: "syntax"
         split: "train", "val", or "test"
         quality: None for baseline PNG, or int (10-100)
         format: "jpeg", "jpeg2000", or "avif" (only used if quality is not None)
@@ -83,14 +83,11 @@ class ArcadeClassificationDataset(Dataset):
     multi_label = True
 
     def __init__(self, task, split, quality=None, format=None, transform=None, target_size=(224, 224)):
-        self.task = task
-        self.split = split
         self.quality = quality
         self.format = format if format else config.DEFAULT_FORMAT
-        self.target_size = target_size
 
-        self.annotations_path = config.get_annotations_path(task, split)
-        with open(self.annotations_path, 'r') as f:
+        annotations_path = config.get_annotations_path(task, split)
+        with open(annotations_path, 'r') as f:
             self.coco_data = json.load(f)
 
         self.images_info = {img['id']: img for img in self.coco_data['images']}

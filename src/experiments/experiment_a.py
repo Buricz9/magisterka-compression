@@ -18,8 +18,6 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size,
     """Run Experiment A: train on compressed, test on baseline."""
     config.set_seed()
 
-    num_classes = config.NUM_CLASSES.get(task, 26)
-
     results = []
 
     for quality in quality_levels:
@@ -47,21 +45,14 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size,
         experiment_id = training_results['experiment_id']
         checkpoint_path = config.get_checkpoint_path(experiment_id) / "best_model.pth"
 
-        try:
-            test_loader = get_dataloader(
-                task, 'test', quality=None, format=None,
-                batch_size=batch_size, num_workers=config.NUM_WORKERS,
-            )
-            num_classes = test_loader.dataset.num_classes
-            model = create_model(model_name, num_classes).to(device)
-            checkpoint = torch.load(checkpoint_path, map_location=device)
-            model.load_state_dict(checkpoint['model_state_dict'])
-        except FileNotFoundError:
-            print(f"Error: Checkpoint not found: {checkpoint_path}")
-            raise
-        except RuntimeError as e:
-            print(f"Error loading checkpoint: {e}")
-            raise
+        test_loader = get_dataloader(
+            task, 'test', quality=None, format=None,
+            batch_size=batch_size, num_workers=config.NUM_WORKERS,
+        )
+        num_classes = test_loader.dataset.num_classes
+        model = create_model(model_name, num_classes).to(device)
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        model.load_state_dict(checkpoint['model_state_dict'])
 
         test_metrics = evaluate_model(model, test_loader, device)
 

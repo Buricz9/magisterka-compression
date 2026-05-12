@@ -349,7 +349,7 @@ def main():
         description="Compress images to JPEG, JPEG2000, or AVIF (matched CR)"
     )
     parser.add_argument("--task", default="syntax",
-                       choices=["syntax", "stenosis", "all"],
+                       choices=["syntax", "all"],
                        help="Task to compress (default: syntax)")
     parser.add_argument(
         "--split", choices=["train", "val", "test", "all"], default="all"

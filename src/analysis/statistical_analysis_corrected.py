@@ -1,20 +1,13 @@
 """
-Statistical analysis module for compression experiments - CORRECTED VERSION.
+Statistical analysis module for compression experiments (Experiment A).
 
 Provides:
-- Paired t-tests between compression formats (corrected for experiment B)
-- Independent t-tests (for experiment A)
+- Independent t-tests between compression formats
 - ANOVA for comparing all formats
+- Kruskal-Wallis non-parametric alternative
 - Effect sizes (Cohen's d)
+- Multiple-comparison corrections (Bonferroni, Holm)
 - Statistical report generation
-
-CORRECTIONS MADE:
-- Added paired_t_test for experiment B (same model, different quality levels)
-- Added wilcoxon_signed_rank_test for non-parametric paired analysis
-- Corrected Mann-Whitney U to Wilcoxon signed-rank for paired data
-- Improved documentation and experimental design guidance
-
-Author: Master's Thesis Project
 """
 import sys
 from pathlib import Path
@@ -46,7 +39,6 @@ class StatisticalAnalyzer:
             alpha: Significance level for hypothesis tests (default: 0.05)
         """
         self.alpha = alpha
-        self.formats = config.COMPRESSION_FORMATS  # ['jpeg', 'jpeg2000', 'avif']
 
     def cohens_d(self, group1: np.ndarray, group2: np.ndarray) -> float:
         """
@@ -77,27 +69,6 @@ class StatisticalAnalyzer:
             return 0.0
 
         return (np.mean(group1) - np.mean(group2)) / pooled_std
-
-    def cohens_d_paired(self, differences: np.ndarray) -> float:
-        """
-        Calculate Cohen's d for paired samples.
-
-        Uses the standard deviation of the differences as the denominator.
-
-        Args:
-            differences: Array of paired differences (group1 - group2)
-
-        Returns:
-            Cohen's d effect size for paired samples
-        """
-        std_diff = np.std(differences, ddof=1)
-        mean_diff = np.mean(differences)
-
-        EPSILON = 1e-10
-        if std_diff < EPSILON:
-            return 0.0
-
-        return mean_diff / std_diff
 
     def interpret_cohens_d(self, d: float) -> str:
         """
@@ -161,54 +132,6 @@ class StatisticalAnalyzer:
             'n_samples_2': len(data2)
         }
 
-    def paired_t_test(
-        self,
-        data1: np.ndarray,
-        data2: np.ndarray,
-        format1: str = "Format1",
-        format2: str = "Format2"
-    ) -> Dict:
-        """
-        Perform paired samples t-test between two groups.
-
-        Use this for EXPERIMENT B: Same model tested on different quality levels.
-        The data are PAIRED because they come from the same test images.
-
-        Note: Assumes data1 and data2 are aligned (same order of test images).
-
-        Args:
-            data1: First group of observations (e.g., accuracy scores for Q=10)
-            data2: Second group of observations (e.g., accuracy scores for Q=20)
-            format1: Name of first condition
-            format2: Name of second condition
-
-        Returns:
-            Dictionary with test results
-        """
-        # Calculate paired differences
-        differences = np.array(data1) - np.array(data2)
-
-        # Paired t-test
-        t_statistic, p_value = stats.ttest_rel(data1, data2)
-
-        # Effect size for paired samples
-        effect_size = self.cohens_d_paired(differences)
-
-        return {
-            'test': 'paired_t_test',
-            'comparison': f"{format1} vs {format2}",
-            'format1': format1,
-            'format2': format2,
-            'mean_diff': float(np.mean(differences)),
-            't_statistic': float(t_statistic),
-            'p_value': float(p_value),
-            'significant': p_value < self.alpha,
-            'cohens_d': float(effect_size),
-            'effect_interpretation': self.interpret_cohens_d(effect_size),
-            'n_samples': len(data1),
-            'mean_diff_std': float(np.std(differences, ddof=1))
-        }
-
     def anova_test(
         self,
         groups: Dict[str, np.ndarray],
@@ -269,47 +192,6 @@ class StatisticalAnalyzer:
             return "medium"
         else:
             return "large"
-
-    def wilcoxon_signed_rank_test(
-        self,
-        data1: np.ndarray,
-        data2: np.ndarray,
-        format1: str = "Format1",
-        format2: str = "Format2"
-    ) -> Dict:
-        """
-        Perform Wilcoxon signed-rank test (non-parametric alternative to paired t-test).
-
-        Use this for EXPERIMENT B when data are not normally distributed.
-
-        Args:
-            data1: First group of observations
-            data2: Second group of observations
-            format1: Name of first format
-            format2: Name of second format
-
-        Returns:
-            Dictionary with test results
-        """
-        statistic, p_value = stats.wilcoxon(data1, data2)
-
-        # Rank-biserial correlation as effect size
-        n = len(data1)
-        z_score = (statistic - n * (n + 1) / 4) / np.sqrt(n * (n + 1) * (2 * n + 1) / 24)
-        r = abs(z_score) / np.sqrt(n)
-
-        return {
-            'test': 'wilcoxon_signed_rank',
-            'comparison': f"{format1} vs {format2}",
-            'format1': format1,
-            'format2': format2,
-            'statistic': float(statistic),
-            'p_value': float(p_value),
-            'significant': p_value < self.alpha,
-            'effect_size_r': float(r),
-            'effect_interpretation': self.interpret_effect_size_r(r),
-            'n_samples': n
-        }
 
     def interpret_effect_size_r(self, r: float) -> str:
         """
@@ -564,25 +446,13 @@ def analyze_format_comparison(
 
     for i, fmt1 in enumerate(format_list):
         for fmt2 in format_list[i + 1:]:
-            # Choose test based on experiment type
-            if experiment_type == "experiment_a":
-                # Experiment A: Different models -> Independent t-test
-                ttest_result = analyzer.independent_t_test(
-                    groups[fmt1], groups[fmt2], fmt1, fmt2
-                )
-                # Mann-Whitney U as non-parametric alternative
-                wilcoxon_result = analyzer.mann_whitney_u_test(
-                    groups[fmt1], groups[fmt2], fmt1, fmt2
-                )
-            else:
-                # Experiment B: Same model, paired data -> Paired t-test
-                ttest_result = analyzer.paired_t_test(
-                    groups[fmt1], groups[fmt2], fmt1, fmt2
-                )
-                # Wilcoxon signed-rank as non-parametric alternative
-                wilcoxon_result = analyzer.wilcoxon_signed_rank_test(
-                    groups[fmt1], groups[fmt2], fmt1, fmt2
-                )
+            # Experiment A: independent samples (different trained models per quality)
+            ttest_result = analyzer.independent_t_test(
+                groups[fmt1], groups[fmt2], fmt1, fmt2
+            )
+            wilcoxon_result = analyzer.mann_whitney_u_test(
+                groups[fmt1], groups[fmt2], fmt1, fmt2
+            )
 
             results['pairwise_tests'].append(ttest_result)
             p_values_ttest.append(ttest_result['p_value'])
@@ -632,12 +502,7 @@ def generate_statistical_report(
     lines.append(f"Metric Analyzed: {results.get('metric', 'N/A')}")
     lines.append(f"Significance Level (alpha): {results.get('alpha', 0.05)}")
 
-    # Add note about test selection
-    exp_type = results.get('experiment_type', 'experiment_a')
-    if exp_type == 'experiment_a':
-        lines.append("\nNote: Using INDEPENDENT samples tests (different models trained separately)")
-    else:
-        lines.append("\nNote: Using PAIRED samples tests (same model, different quality levels)")
+    lines.append("\nNote: Using INDEPENDENT samples tests (different models trained separately)")
 
     # Descriptive Statistics
     lines.append("\n" + "-" * 40)
@@ -854,7 +719,7 @@ def main():
         "--task",
         type=str,
         default="syntax",
-        choices=["syntax", "stenosis"],
+        choices=["syntax"],
         help="Dataset task"
     )
     parser.add_argument(

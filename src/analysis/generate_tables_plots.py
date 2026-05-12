@@ -2,22 +2,15 @@
 Generate publication-ready tables and plots for the master's thesis article.
 
 Creates:
-- LaTeX tables for experiments A and B
+- LaTeX tables for Experiment A
 - CSV summaries for data analysis
 - Matplotlib plots showing compression impact
-- Combined comparison plots
-
-Author: Master's Thesis Project
 """
 import sys
 from pathlib import Path
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from typing import Dict, List, Optional
-import json
-from datetime import datetime
+from typing import Dict, Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -29,7 +22,7 @@ def load_all_results(
     task: str = "syntax"
 ) -> Dict[str, pd.DataFrame]:
     """
-    Load all experiment results for both models and datasets.
+    Load Experiment A results for the given model and task (ARCADE).
 
     Args:
         model_name: Model to load results for
@@ -170,52 +163,6 @@ def generate_comparison_plot(
         plt.tight_layout()
         plt.savefig(output_dir / 'experiment_a_accuracy.png', dpi=300, bbox_inches='tight')
         print(f"Plot saved: {output_dir / 'experiment_a_accuracy.png'}")
-        plt.close()
-
-    # Plot 2: Model comparison (ResNet-50 vs EfficientNet-B0)
-    if 'efficientnet' in results and 'arcade_exp_a' in results:
-        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
-        # Get ResNet-50 results
-        resnet_df = results['arcade_exp_a'][results['arcade_exp_a']['format'] == 'jpeg'].copy()
-        efficientnet_df = results['efficientnet'][
-            (results['efficientnet']['dataset'] == 'arcade') &
-            (results['efficientnet']['format'] == 'jpeg')
-        ].copy()
-
-        if not resnet_df.empty and not efficientnet_df.empty:
-            # Experiment A comparison
-            ax = axes[0]
-
-            resnet_grouped = resnet_df.groupby('train_quality').agg({'test_hamming_accuracy': 'mean'})
-            efficientnet_grouped = efficientnet_df.groupby('train_quality').agg({'test_hamming_accuracy': 'mean'})
-
-            ax.plot(resnet_grouped.index, resnet_grouped['test_hamming_accuracy'] * 100,
-                   marker='o', label='ResNet-50', linewidth=2, markersize=8)
-            ax.plot(efficientnet_grouped.index, efficientnet_grouped['test_hamming_accuracy'] * 100,
-                   marker='s', label='EfficientNet-B0', linewidth=2, markersize=8)
-
-            ax.set_xlabel('Jakość kompresji (Q)', fontsize=12)
-            ax.set_ylabel('Dokładność testowa (%)', fontsize=12)
-            ax.set_title('Porównanie modeli - Eksperyment A', fontsize=14, fontweight='bold')
-            ax.legend(fontsize=11)
-            ax.grid(True, alpha=0.3)
-            ax.invert_xaxis()
-
-        # Placeholder for Experiment B if needed
-        ax = axes[1]
-        ax.text(0.5, 0.5, 'Eksperyment B\\n(dane niedostępne)',
-               ha='center', va='center', fontsize=14,
-               transform=ax.transAxes)
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
-        ax.axis('off')
-
-        plt.suptitle('Porównanie architektur modeli',
-                     fontsize=16, fontweight='bold')
-        plt.tight_layout()
-        plt.savefig(output_dir / 'model_comparison.png', dpi=300, bbox_inches='tight')
-        print(f"Plot saved: {output_dir / 'model_comparison.png'}")
         plt.close()
 
 

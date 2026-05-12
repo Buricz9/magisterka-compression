@@ -74,18 +74,6 @@ class FeatureExtractor:
 
         return registered_names
 
-    def register_hooks_by_names(self, layer_names: List[str]) -> None:
-        """
-        Register forward hooks on specific layers by name.
-
-        Args:
-            layer_names: List of layer names to hook
-        """
-        for name, module in self.model.named_modules():
-            if name in layer_names:
-                handle = module.register_forward_hook(self._get_hook(name))
-                self.handles.append(handle)
-
     def extract_features(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         """
         Extract features from input tensor.
@@ -400,34 +388,6 @@ class FeatureMapAnalyzer:
 
         return averaged_results
 
-    def compute_global_metrics(
-        self,
-        layer_results: Dict[str, Dict]
-    ) -> Dict[str, float]:
-        """
-        Compute global (averaged across layers) metrics.
-
-        Args:
-            layer_results: Per-layer analysis results
-
-        Returns:
-            Dictionary of global metrics
-        """
-        metrics_to_average = ['spectral_entropy', 'effective_rank', 'stable_rank', 'pixel_entropy']
-
-        global_metrics = {}
-        for metric in metrics_to_average:
-            values = [
-                layer_data.get(metric, 0)
-                for layer_name, layer_data in layer_results.items()
-                if layer_name != '_metadata' and metric in layer_data
-            ]
-            if values:
-                global_metrics[f'global_mean_{metric}'] = float(np.mean(values))
-                global_metrics[f'global_std_{metric}'] = float(np.std(values))
-
-        return global_metrics
-
     def cleanup(self) -> None:
         """Remove hooks and clean up resources."""
         self.extractor.remove_hooks()
@@ -439,7 +399,6 @@ def analyze_layer_progression(
     task: str,
     device: str = 'cuda',
     max_batches: int = 10,
-    dataset: str = 'arcade'
 ) -> Dict:
     """
     Analyze how information content changes across network depth.
@@ -450,7 +409,6 @@ def analyze_layer_progression(
         task: Dataset task
         device: Computation device
         max_batches: Maximum batches to analyze
-        dataset: Dataset type ('arcade')
 
     Returns:
         Layer progression analysis results
@@ -503,7 +461,6 @@ def analyze_layer_progression(
         'checkpoint': str(checkpoint_path),
         'model': model_name,
         'task': task,
-        'dataset': dataset,
         'layer_results': layer_results,
         'progression': progression,
         'analysis_date': datetime.now().isoformat()
@@ -517,7 +474,6 @@ def run_feature_analysis(
     device: str = 'cuda',
     max_batches: int = 10,
     output_dir: Optional[Path] = None,
-    dataset: str = 'arcade'
 ) -> Dict:
     """
     Run feature analysis on a trained model.
@@ -529,7 +485,6 @@ def run_feature_analysis(
         device: Computation device
         max_batches: Maximum batches to analyze
         output_dir: Output directory for results
-        dataset: Dataset type ('arcade')
 
     Returns:
         Analysis results dictionary
@@ -540,7 +495,6 @@ def run_feature_analysis(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Find checkpoint
     if experiment_id:
         checkpoint_path = config.get_checkpoint_path(experiment_id) / "best_model.pth"
     else:
@@ -550,16 +504,13 @@ def run_feature_analysis(
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
 
     print(f"Analyzing checkpoint: {checkpoint_path}")
-    print(f"Dataset: {dataset}")
 
-    # Run analysis
     results = analyze_layer_progression(
         checkpoint_path=checkpoint_path,
         model_name=model_name,
         task=task,
         device=device,
         max_batches=max_batches,
-        dataset=dataset
     )
 
     # Save results
@@ -625,21 +576,14 @@ def main():
         "--task",
         type=str,
         default="syntax",
-        choices=["syntax", "stenosis"],
-        help="Dataset task (for ARCADE)"
+        choices=["syntax"],
+        help="Dataset task"
     )
     parser.add_argument(
         "--experiment-id",
         type=str,
         required=True,
         help="Experiment ID to analyze"
-    )
-    parser.add_argument(
-        "--dataset",
-        type=str,
-        default="arcade",
-        choices=["arcade"],
-        help="Dataset to analyze"
     )
     parser.add_argument(
         "--device",
@@ -671,7 +615,6 @@ def main():
         device=args.device,
         max_batches=args.max_batches,
         output_dir=output_dir,
-        dataset=args.dataset
     )
 
 

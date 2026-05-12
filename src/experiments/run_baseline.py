@@ -69,7 +69,7 @@ def run_baseline(model_name, task, num_epochs, batch_size, device):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="resnet50", choices=config.SUPPORTED_MODELS)
-    parser.add_argument("--task", type=str, default="syntax", choices=["syntax", "stenosis"])
+    parser.add_argument("--task", type=str, default="syntax", choices=["syntax"])
     parser.add_argument("--epochs", type=int, default=config.NUM_EPOCHS)
     parser.add_argument("--batch-size", type=int, default=config.BATCH_SIZE)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")

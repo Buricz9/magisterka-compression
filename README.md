@@ -15,12 +15,10 @@ C:\Uczelnia\Magisterka\
 ├── src/
 │   ├── core/
 │   │   ├── dataset.py                  # ARCADE DataLoader (multi-label, 26 klas)
-│   │   ├── isic_dataset.py             # ISIC 2019 (opcjonalny benchmark)
 │   │   └── train.py                    # train_model, evaluate_model, create_model
 │   ├── processing/
 │   │   ├── compress_images.py          # kompresja JPEG/JP2/AVIF z matched-CR
-│   │   ├── measure_quality.py          # PSNR/SSIM/CR per format
-│   │   └── compress_isic.py            # analog dla ISIC (poza scope tezy)
+│   │   └── measure_quality.py          # PSNR/SSIM/CR per format
 │   ├── experiments/
 │   │   ├── experiment_a.py             # trening na compressed, test na PNG
 │   │   └── run_baseline.py             # trening i test na PNG
@@ -117,7 +115,7 @@ python -m src.analysis.statistical_analysis_corrected --experiment experiment_a 
 | Data | Decyzja | Uzasadnienie |
 |---|---|---|
 | **25.11.2025** | Inicjalny kontakt, link do GitHub | — |
-| **16.02.2026** | Dodać EfficientNet-B0 jako drugi model; analiza statystyczna (p-value); benchmark dataset (ISIC); feature maps analysis (spectral/Shannon entropy) | Za mało materiału do publikacji |
+| **16.02.2026** | Dodać EfficientNet-B0 jako drugi model; analiza statystyczna (p-value); drugi benchmark dataset (do znalezienia); feature maps analysis (spectral/Shannon entropy) | Za mało materiału do publikacji |
 | **26.03.2026** | Przejście z single-label na multi-label (sigmoid + BCE + pos_weight) | 99.3% obrazów ma >1 segment różnej klasy — single-label arbitralny |
 | **2026-05-12** | Q=100 dla JP2/AVIF musi być stratny (nie lossless); zdefiniować jak Q jest liczony dla każdego formatu | Promotor wykryła PSNR=∞ dla JP2 Q=100 (fizycznie niemożliwe). Diagnoza: gałąź ratunkowa `if CR<=1` zapisywała JP2/AVIF bezstratnie dla 99.7% obrazów testowych. Fix: matched-CR przez binary search, cap AVIF quality≤99, RAW-based CR. |
 
@@ -132,4 +130,16 @@ python -m src.analysis.statistical_analysis_corrected --experiment experiment_a 
 ## Datasety
 
 - **ARCADE/Syntax** (główny): 1500 obrazów 512×512 angiografii rentgenowskiej. 1000 train / 200 val / 300 test. 26 klas SYNTAX Score. Multi-label.
-- **ISIC 2019** (opcjonalny benchmark): w `dataset/isic_2019/`. Kod w `src/core/isic_dataset.py` i `src/processing/compress_isic.py`. Poza scope obecnej tezy.
+- **Drugi zbiór benchmarkowy** — **TODO**. Promotor wymaga drugiego datasetu (medycznego lub nie) do walidacji wniosków. Jeszcze nie wybrany. Wymaga: znalezienie + integracja (DataLoader, pipeline kompresji, ewentualnie multi-label setup).
+
+## Plan rozszerzenia: Eksperyment B (do zaimplementowania)
+
+Aktualnie w repo jest tylko **Eksperyment A** — *trening na obrazach skompresowanych, ewaluacja na oryginałach PNG*. To pokazuje, jak dobrze model trenowany na "zniszczonym" sygnale generalizuje do czystego sygnału (scenariusz: trening danymi z archiwum PACS, klinika ma czyste obrazy).
+
+**Eksperyment B** to scenariusz odwrotny i kliniczne bardziej realistyczny: *trening na oryginałach (PNG), ewaluacja na obrazach skompresowanych*. Symuluje sytuację gdzie model został wytrenowany w środowisku badawczym z surowymi danymi, a wdrażany jest w systemie PACS gdzie strumień diagnostyczny przechodzi przez kompresję. Pozwala odpowiedzieć: *o ile spada skuteczność klinicznego modelu gdy obraz jest kompresowany przed ewaluacją?*
+
+Implementacja będzie wymagała:
+- Nowy skrypt `src/experiments/experiment_b.py` (analog `experiment_a.py`): jeden trening na PNG → ewaluacja na obrazach skompresowanych z każdym Q × każdym formatem
+- Aktualizacja `statistical_analysis_corrected.py` — przywrócić opcję `--experiment experiment_b` z PAIRED t-test (te same próbki testowe przez wszystkie warunki) i Wilcoxon zamiast Mann-Whitney
+- Aktualizacja `generate_tables_plots.py` — funkcje `generate_latex_table_experiment_b` i plot Exp B (został usunięty wraz z eksperymentem)
+- Decyzja metodologiczna: trenować na natywnie czytanych z dysku PNG, czy na losowo wybranym Q jako augmentation?

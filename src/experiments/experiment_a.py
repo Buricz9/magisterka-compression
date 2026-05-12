@@ -11,24 +11,14 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import config
 from core.train import train_model, evaluate_model, create_model
 from core.dataset import get_dataloader
-from core.isic_dataset import get_isic_dataloader
 
 
-def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size, device, format='jpeg', dataset='arcade'):
+def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size,
+                     device, format='jpeg'):
     """Run Experiment A: train on compressed, test on baseline."""
-    # Set seed for reproducibility
     config.set_seed()
 
-    # Import appropriate dataset loader
-    if dataset == 'isic':
-        get_dataloader_func = get_isic_dataloader
-        num_classes = config.ISIC_NUM_CLASSES
-        # For ISIC, we need a dummy task since train_model requires it
-        task_param = 'isic'  # Dummy task name for ISIC
-    else:
-        get_dataloader_func = get_dataloader
-        num_classes = config.NUM_CLASSES.get(task, 26)
-        task_param = task
+    num_classes = config.NUM_CLASSES.get(task, 26)
 
     results = []
 
@@ -42,7 +32,7 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size, d
         # than cross-domain generalization. Test stays on baseline PNG.
         training_results = train_model(
             model_name=model_name,
-            task=task_param,
+            task=task,
             train_quality=quality,
             val_quality=quality,
             num_epochs=num_epochs,
@@ -58,17 +48,15 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size, d
         checkpoint_path = config.get_checkpoint_path(experiment_id) / "best_model.pth"
 
         try:
-            if dataset == 'isic':
-                test_loader = get_dataloader_func(split='test', quality=None, format=None,
-                                                   batch_size=batch_size, num_workers=config.NUM_WORKERS)
-            else:
-                test_loader = get_dataloader_func(task, 'test', quality=None, format=None,
-                                                   batch_size=batch_size, num_workers=config.NUM_WORKERS)
+            test_loader = get_dataloader(
+                task, 'test', quality=None, format=None,
+                batch_size=batch_size, num_workers=config.NUM_WORKERS,
+            )
             num_classes = test_loader.dataset.num_classes
             model = create_model(model_name, num_classes).to(device)
             checkpoint = torch.load(checkpoint_path, map_location=device)
             model.load_state_dict(checkpoint['model_state_dict'])
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             print(f"Error: Checkpoint not found: {checkpoint_path}")
             raise
         except RuntimeError as e:
@@ -94,11 +82,7 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size, d
     output_dir = config.RESULTS_ROOT / "experiment_a"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Use appropriate filename based on dataset
-    if dataset == 'isic':
-        output_file = output_dir / f"{model_name}_{dataset}_{format}_results.csv"
-    else:
-        output_file = output_dir / f"{model_name}_{dataset}_{task_param}_{format}_results.csv"
+    output_file = output_dir / f"{model_name}_arcade_{task}_{format}_results.csv"
 
     if output_file.exists():
         existing = pd.read_csv(output_file)
@@ -117,11 +101,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="resnet50", choices=config.SUPPORTED_MODELS)
     parser.add_argument("--task", type=str, default="syntax", choices=["syntax", "stenosis"],
-                       help="ARCADE task (ignored for ISIC)")
+                       help="ARCADE task")
     parser.add_argument("--format", type=str, default="jpeg", choices=["jpeg", "jpeg2000", "avif"],
                        help="Compression format")
-    parser.add_argument("--dataset", type=str, default="arcade", choices=["arcade", "isic"],
-                       help="Dataset to use (arcade or isic)")
     parser.add_argument("--epochs", type=int, default=config.NUM_EPOCHS)
     parser.add_argument("--batch-size", type=int, default=config.BATCH_SIZE)
     parser.add_argument("--mvp", action="store_true")
@@ -137,18 +119,14 @@ def main():
     else:
         quality_levels = config.QUALITY_LEVELS
 
-    # For ISIC, ignore task parameter
-    task = args.task if args.dataset == 'arcade' else None
-
     run_experiment_a(
         model_name=args.model,
-        task=task,
+        task=args.task,
         quality_levels=quality_levels,
         num_epochs=args.epochs,
         batch_size=args.batch_size,
         device=torch.device(args.device),
         format=args.format,
-        dataset=args.dataset
     )
 
 

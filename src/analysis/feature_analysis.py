@@ -450,7 +450,7 @@ def analyze_layer_progression(
         task: Dataset task
         device: Computation device
         max_batches: Maximum batches to analyze
-        dataset: Dataset type ('arcade' or 'isic')
+        dataset: Dataset type ('arcade')
 
     Returns:
         Layer progression analysis results
@@ -462,15 +462,8 @@ def analyze_layer_progression(
     import os
     optimal_workers = min(4, os.cpu_count() or 1)
 
-    # Select appropriate dataloader based on dataset
-    if dataset == 'isic':
-        from src.core.isic_dataset import get_isic_dataloader
-        print("Using ISIC 2019 dataset for feature analysis")
-        dataloader = get_isic_dataloader('test', quality=None, format=None,
-                                        batch_size=16, num_workers=optimal_workers, shuffle=False)
-    else:
-        dataloader = get_dataloader(task, 'test', quality=None, format=None,
-                                    batch_size=16, num_workers=optimal_workers, shuffle=False)
+    dataloader = get_dataloader(task, 'test', quality=None, format=None,
+                                batch_size=16, num_workers=optimal_workers, shuffle=False)
 
     num_classes = dataloader.dataset.num_classes
 
@@ -536,7 +529,7 @@ def run_feature_analysis(
         device: Computation device
         max_batches: Maximum batches to analyze
         output_dir: Output directory for results
-        dataset: Dataset type ('arcade' or 'isic')
+        dataset: Dataset type ('arcade')
 
     Returns:
         Analysis results dictionary
@@ -645,7 +638,7 @@ def main():
         "--dataset",
         type=str,
         default="arcade",
-        choices=["arcade", "isic"],
+        choices=["arcade"],
         help="Dataset to analyze"
     )
     parser.add_argument(

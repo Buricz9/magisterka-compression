@@ -467,7 +467,7 @@ def load_experiment_results(
     Load experiment results from CSV files.
 
     Args:
-        experiment_type: "experiment_a" or "experiment_b"
+        experiment_type: "experiment_a"
         model_name: Model architecture name
         task: Dataset task name
 
@@ -506,7 +506,7 @@ def analyze_format_comparison(
         df: DataFrame with experiment results
         metric_column: Column name for the metric to compare
         group_column: Column name for grouping (format)
-        experiment_type: "experiment_a" or "experiment_b"
+        experiment_type: "experiment_a"
 
     Returns:
         Dictionary with all statistical test results
@@ -685,7 +685,7 @@ def generate_statistical_report(
 
     # Pairwise Comparisons (t-test)
     if results.get('pairwise_tests'):
-        test_name = "PAIRED" if exp_type == 'experiment_b' else "INDEPENDENT"
+        test_name = "INDEPENDENT"
         lines.append("\n" + "-" * 40)
         lines.append(f"PAIRWISE COMPARISONS ({test_name} t-test)")
         lines.append("-" * 40)
@@ -700,7 +700,7 @@ def generate_statistical_report(
 
     # Pairwise Comparisons (Non-parametric)
     if results.get('pairwise_wilcoxon'):
-        test_name = "Wilcoxon Signed-Rank" if exp_type == 'experiment_b' else "Mann-Whitney U"
+        test_name = "Mann-Whitney U"
         lines.append("\n" + "-" * 40)
         lines.append(f"PAIRWISE COMPARISONS ({test_name}, Non-parametric)")
         lines.append("-" * 40)
@@ -766,7 +766,7 @@ def run_full_statistical_analysis(
     Run complete statistical analysis on experiment results.
 
     Args:
-        experiment_type: "experiment_a" or "experiment_b"
+        experiment_type: "experiment_a"
         model_name: Model architecture name
         task: Dataset task name
         metrics: List of metrics to analyze
@@ -841,7 +841,7 @@ def main():
         "--experiment",
         type=str,
         default="experiment_a",
-        choices=["experiment_a", "experiment_b"],
+        choices=["experiment_a"],
         help="Experiment type to analyze"
     )
     parser.add_argument(

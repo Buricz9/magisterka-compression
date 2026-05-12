@@ -190,111 +190,6 @@ def plot_experiment_a_accuracy(output_dir):
     plt.close()
 
 
-def plot_experiment_b_accuracy(output_dir):
-    """Generate Experiment B Accuracy plot (from article table data)."""
-    # Data from Table B in article (no CSV available)
-    exp_b_data = {
-        'jpeg': {
-            100: 15.00, 85: 18.00, 70: 19.33, 50: 20.00, 30: 19.33, 10: 10.67
-        },
-        'jpeg2000': {
-            100: 17.67, 85: 16.33, 70: 15.67, 50: 16.00, 30: 13.67, 10: 12.00
-        },
-        'avif': {
-            100: 19.33, 85: 15.67, 70: 18.33, 50: 19.33, 30: 14.67, 10: 14.00
-        }
-    }
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    formats = ['jpeg', 'jpeg2000', 'avif']
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
-    markers = ['o', 's', '^']
-
-    for fmt, color, marker in zip(formats, colors, markers):
-        qualities = sorted(exp_b_data[fmt].keys(), reverse=True)
-        accuracies = [exp_b_data[fmt][q] for q in qualities]
-        ax.plot(qualities, accuracies, marker=marker, linewidth=2, markersize=8,
-                label=fmt.upper(), color=color)
-
-    ax.set_xlabel('Jakość kompresji (Q)')
-    ax.set_ylabel('Dokładność testowa [%]')
-    ax.set_title('Eksperyment B: Trening na oryginałach, test na skompresowanych')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    ax.invert_xaxis()
-
-    plt.tight_layout()
-    output_path = output_dir / 'exp_b_accuracy.pdf'
-    plt.savefig(output_path, format='pdf')
-    print(f"Saved: {output_path}")
-    plt.close()
-
-
-def plot_combined_ab(output_dir):
-    """Generate combined plot comparing Experiment A and B."""
-    exp_a_path = config.RESULTS_ROOT / "experiment_a"
-
-    # Load Experiment A data
-    exp_a_data = {}
-    for fmt in ['jpeg', 'jpeg2000', 'avif']:
-        csv_file = exp_a_path / f"resnet50_arcade_syntax_{fmt}_results.csv"
-        if csv_file.exists():
-            df = pd.read_csv(csv_file)
-            exp_a_data[fmt] = dict(zip(df['train_quality'], df['test_hamming_accuracy'] * 100))
-
-    # Experiment B data (from article)
-    exp_b_data = {
-        'jpeg': {100: 15.00, 85: 18.00, 70: 19.33, 50: 20.00, 30: 19.33, 10: 10.67},
-        'jpeg2000': {100: 17.67, 85: 16.33, 70: 15.67, 50: 16.00, 30: 13.67, 10: 12.00},
-        'avif': {100: 19.33, 85: 15.67, 70: 18.33, 50: 19.33, 30: 14.67, 10: 14.00}
-    }
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
-    formats = ['jpeg', 'jpeg2000', 'avif']
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
-    markers = ['o', 's', '^']
-
-    # Experiment A
-    ax = axes[0]
-    for fmt, color, marker in zip(formats, colors, markers):
-        if fmt in exp_a_data:
-            qualities = sorted(exp_a_data[fmt].keys(), reverse=True)
-            accuracies = [exp_a_data[fmt][q] for q in qualities]
-            ax.plot(qualities, accuracies, marker=marker, linewidth=2, markersize=8,
-                    label=fmt.upper(), color=color)
-
-    ax.set_xlabel('Jakość kompresji (Q)')
-    ax.set_ylabel('Dokładność testowa [%]')
-    ax.set_title('Eksperyment A: Trening na skompresowanych')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    ax.invert_xaxis()
-
-    # Experiment B
-    ax = axes[1]
-    for fmt, color, marker in zip(formats, colors, markers):
-        qualities = sorted(exp_b_data[fmt].keys(), reverse=True)
-        accuracies = [exp_b_data[fmt][q] for q in qualities]
-        ax.plot(qualities, accuracies, marker=marker, linewidth=2, markersize=8,
-                label=fmt.upper(), color=color)
-
-    ax.set_xlabel('Jakość kompresji (Q)')
-    ax.set_ylabel('Dokładność testowa [%]')
-    ax.set_title('Eksperyment B: Test na skompresowanych')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    ax.invert_xaxis()
-
-    plt.suptitle('Porównanie Eksperymentu A i B', fontsize=16, fontweight='bold')
-    plt.tight_layout()
-    output_path = output_dir / 'combined_ab.pdf'
-    plt.savefig(output_path, format='pdf')
-    print(f"Saved: {output_path}")
-    plt.close()
-
-
 def main():
     output_dir = config.PLOTS_ROOT
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -327,12 +222,6 @@ def main():
 
     print("4. Experiment A Accuracy plot...")
     plot_experiment_a_accuracy(output_dir)
-
-    print("5. Experiment B Accuracy plot...")
-    plot_experiment_b_accuracy(output_dir)
-
-    print("6. Combined A+B plot...")
-    plot_combined_ab(output_dir)
 
     print("\n" + "=" * 80)
     print("ALL PDF PLOTS GENERATED SUCCESSFULLY!")

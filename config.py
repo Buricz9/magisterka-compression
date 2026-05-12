@@ -28,11 +28,6 @@ DEFAULT_FORMAT = "jpeg"
 QUALITY_LEVELS = [100, 95, 90, 85, 80, 75, 70, 60, 50, 40, 30, 20, 10]
 QUALITY_LEVELS_MVP = [100, 85, 70, 50, 30, 10]
 
-# ISIC 2019 paths
-ISIC_ROOT = DATASET_ROOT / "isic_2019"
-ISIC_COMPRESSED_ROOT = DATASET_ROOT / "compressed_isic"
-ISIC_NUM_CLASSES = 8  # ISIC 2019 has 8 diagnostic categories
-
 # Supported models
 SUPPORTED_MODELS = ["resnet50", "efficientnet_b0"]
 

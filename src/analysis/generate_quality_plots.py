@@ -145,20 +145,20 @@ def plot_compression_ratio(aggregated, output_dir):
     plt.close()
 
 
-def plot_experiment_a_accuracy(output_dir):
+def plot_experiment_a_accuracy(output_dir, model_name="resnet50"):
     """Generate Experiment A Accuracy plot (convert PNG to PDF)."""
     exp_a_path = config.RESULTS_ROOT / "experiment_a"
 
     # Load all experiment A results
     all_data = []
     for fmt in ['jpeg', 'jpeg2000', 'avif']:
-        csv_file = exp_a_path / f"resnet50_arcade_syntax_{fmt}_results.csv"
+        csv_file = exp_a_path / f"{model_name}_arcade_syntax_{fmt}_results.csv"
         if csv_file.exists():
             df = pd.read_csv(csv_file)
             all_data.append(df)
 
     if not all_data:
-        print("[WARNING] No experiment A results found")
+        print(f"[WARNING] No experiment A results found for {model_name}")
         return
 
     combined = pd.concat(all_data, ignore_index=True)
@@ -184,7 +184,7 @@ def plot_experiment_a_accuracy(output_dir):
     ax.invert_xaxis()
 
     plt.tight_layout()
-    output_path = output_dir / 'exp_a_accuracy.pdf'
+    output_path = output_dir / f'exp_a_accuracy_{model_name}.pdf'
     plt.savefig(output_path, format='pdf')
     print(f"Saved: {output_path}")
     plt.close()
@@ -220,8 +220,10 @@ def main():
     print("3. Compression Ratio plot...")
     plot_compression_ratio(aggregated, output_dir)
 
-    print("4. Experiment A Accuracy plot...")
-    plot_experiment_a_accuracy(output_dir)
+    # One accuracy plot per trained model (silently skips if CSV missing).
+    for model in config.SUPPORTED_MODELS:
+        print(f"\n4. Experiment A Accuracy plot — {model}...")
+        plot_experiment_a_accuracy(output_dir, model_name=model)
 
     print("\n" + "=" * 80)
     print("ALL PDF PLOTS GENERATED SUCCESSFULLY!")

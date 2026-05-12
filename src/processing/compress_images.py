@@ -257,7 +257,12 @@ def compress_dataset_jpeg(task, split, quality_levels, force=False):
     """Compress dataset to JPEG and return per-image compression ratios.
 
     Args:
-        force: If True, re-compress even if CR map exists
+        force: If True, re-compress even if CR map exists.
+
+    The CR map is persisted to disk AFTER EACH quality level, so a crash
+    mid-loop (e.g. at Q=70 when 8/13 done) keeps the work for q-levels that
+    already finished. A later run with the same `quality_levels` will skip
+    those entries unless `force=True`.
     """
     source_dir = config.get_data_path(task, split, quality=None)
     if not source_dir.exists():
@@ -267,30 +272,28 @@ def compress_dataset_jpeg(task, split, quality_levels, force=False):
     image_files = sorted(list(source_dir.glob("*.png")))
     print(f"\n{task}/{split}: {len(image_files)} images")
 
-    # Check if CR map already exists
     cr_map_path = get_cr_map_path(task, split)
+    cr_map_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if not force and cr_map_path.exists():
+    # Load existing CR map if present; only re-do quality levels that are
+    # missing or incomplete (count mismatch).
+    cr_map = {}
+    if cr_map_path.exists() and not force:
         print(f"Loading existing CR map from {cr_map_path}")
         with open(cr_map_path, 'r') as f:
             cr_map = json.load(f)
 
-        # Verify all quality levels are present
-        missing_q = [q for q in quality_levels if str(q) not in cr_map]
-        if not missing_q:
-            print(f"CR map complete for quality levels {quality_levels}")
-            return cr_map
-        else:
-            print(f"Missing quality levels in CR map: {missing_q}, will compress")
-            # Remove stale CR map
-            cr_map_path.unlink()
+    def _is_complete(q):
+        return str(q) in cr_map and len(cr_map[str(q)]) == len(image_files)
 
-    print("Format: JPEG (reference)")
+    todo_q = [q for q in quality_levels if not _is_complete(q)]
+    if not todo_q:
+        print(f"CR map complete for quality levels {quality_levels}")
+        return cr_map
 
-    # {quality: {image_stem: compression_ratio}}
-    cr_map = {}
+    print(f"Format: JPEG (reference); compressing Q levels: {todo_q}")
 
-    for quality in quality_levels:
+    for quality in todo_q:
         output_dir = config.get_data_path(task, split, quality=quality, format="jpeg")
         output_dir.mkdir(parents=True, exist_ok=True)
         cr_map[str(quality)] = {}
@@ -303,12 +306,10 @@ def compress_dataset_jpeg(task, split, quality_levels, force=False):
                     img_path, output_path
                 )
 
-    # Save CR map to disk
-    cr_map_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(cr_map_path, 'w') as f:
-        json.dump(cr_map, f)
+        # Persist after every quality level so a crash doesn't lose progress.
+        with open(cr_map_path, 'w') as f:
+            json.dump(cr_map, f)
     print(f"Saved CR map to {cr_map_path}")
-
     return cr_map
 
 

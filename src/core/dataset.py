@@ -104,16 +104,31 @@ class ArcadeClassificationDataset(Dataset):
         for ann in self.coco_data['annotations']:
             self.image_annotations[ann['image_id']].append(ann)
 
-        # Multi-hot label per image: 1.0 for every category present in annotations
+        # Multi-hot label per image: 1.0 for every category present in annotations.
+        # Annotations with unknown category_id (outside the `categories` block)
+        # are skipped with a warning instead of crashing — defensive guard for
+        # potentially corrupt/extended COCO files.
         self.image_labels = {}
+        unknown_cats = set()
         for image_id in self.images_info.keys():
             annotations = self.image_annotations[image_id]
             if not annotations:
                 continue
             label = np.zeros(self.num_classes, dtype=np.float32)
             for ann in annotations:
-                label[self.category_to_idx[ann['category_id']]] = 1.0
+                cat_id = ann['category_id']
+                idx = self.category_to_idx.get(cat_id)
+                if idx is None:
+                    unknown_cats.add(cat_id)
+                    continue
+                label[idx] = 1.0
             self.image_labels[image_id] = label
+        if unknown_cats:
+            import warnings
+            warnings.warn(
+                f"{split}: skipped annotations with unknown category_id(s) "
+                f"{sorted(unknown_cats)} — not present in categories block."
+            )
 
         self.image_ids = list(self.image_labels.keys())
 
@@ -179,7 +194,7 @@ def get_dataloader(task, split, quality=None, format=None, batch_size=16, num_wo
     Create a DataLoader for ARCADE dataset.
 
     Args:
-        task: "syntax" or "stenosis"
+        task: "syntax"
         split: "train", "val", or "test"
         quality: None for baseline, or int (10-100)
         format: "jpeg", "jpeg2000", or "avif" (only used if quality is not None)

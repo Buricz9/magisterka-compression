@@ -42,6 +42,11 @@ def calculate_metrics(baseline_path, compressed_path):
             return None
 
         psnr_value = psnr(baseline, compressed, data_range=255)
+        # Cap PSNR=inf (bit-exact identical images) at 100 dB so downstream
+        # groupby.mean() doesn't get poisoned. With the lossy fixes in place
+        # this should never trigger for JP2/AVIF, but it's cheap insurance.
+        if not np.isfinite(psnr_value):
+            psnr_value = 100.0
         ssim_value = ssim(baseline, compressed, data_range=255, channel_axis=2, win_size=7)
 
         # RAW-based CR: raw_pixel_bytes / compressed_file_bytes.

@@ -426,7 +426,7 @@ def analyze_layer_progression(
     num_classes = dataloader.dataset.num_classes
 
     model = create_model(model_name, num_classes)
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Analyze

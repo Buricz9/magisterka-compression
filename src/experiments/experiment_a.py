@@ -13,10 +13,60 @@ from core.train import train_model, evaluate_model, create_model
 from core.dataset import get_dataloader
 
 
+def _append_row_to_csv(row, model_name, task, format):
+    """Save one quality-level result to CSV immediately (crash-safe).
+
+    Merges with existing rows so a partial rerun replaces only matching
+    train_quality entries, preserving the rest.
+    """
+    df = pd.DataFrame([row])
+    output_dir = config.RESULTS_ROOT / "experiment_a"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / f"{model_name}_arcade_{task}_{format}_results.csv"
+
+    if output_file.exists():
+        existing = pd.read_csv(output_file)
+        existing = existing[existing['train_quality'] != row['train_quality']]
+        df = pd.concat([existing, df], ignore_index=True)
+        df = df.sort_values('train_quality', ascending=False).reset_index(drop=True)
+
+    df.to_csv(output_file, index=False)
+    return output_file
+
+
+def _preflight_check_compressed(task, quality_levels, format):
+    """Fail fast if compressed images for any (split, quality) are missing.
+
+    Without this the trainer would crash mid-epoch from a worker process
+    FileNotFoundError, which is hard to debug. The check is fast (just
+    file count) and runs before any GPU work begins.
+    """
+    missing = []
+    for quality in quality_levels:
+        for split in ('train', 'val'):
+            d = config.get_data_path(task, split, quality=quality, format=format)
+            n = len(list(d.glob('*'))) if d.exists() else 0
+            if n == 0:
+                missing.append(f"{d}  (0 files)")
+    if missing:
+        raise FileNotFoundError(
+            "Compressed images missing for the requested quality levels:\n  "
+            + "\n  ".join(missing)
+            + "\n\nRun `python -m src.processing.compress_images --format all "
+            "--task syntax --split all` first."
+        )
+
+
 def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size,
                      device, format='jpeg'):
-    """Run Experiment A: train on compressed, test on baseline."""
+    """Run Experiment A: train on compressed, test on baseline.
+
+    CSV is updated AFTER EVERY quality level — if the run crashes at
+    iteration 7/13, the first 6 rows are already persisted.
+    """
+    import gc
     config.set_seed()
+    _preflight_check_compressed(task, quality_levels, format)
 
     results = []
 
@@ -51,7 +101,7 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size,
         )
         num_classes = test_loader.dataset.num_classes
         model = create_model(model_name, num_classes).to(device)
-        checkpoint = torch.load(checkpoint_path, map_location=device)
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
         model.load_state_dict(checkpoint['model_state_dict'])
 
         test_metrics = evaluate_model(model, test_loader, device)
@@ -67,31 +117,25 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size,
         row.update({f'test_{k}': v for k, v in test_metrics.items()})
         results.append(row)
 
-    # Save results — merge with existing CSV so partial reruns (e.g. only Q=100)
-    # update those rows without erasing results for other quality levels.
-    df = pd.DataFrame(results)
-    output_dir = config.RESULTS_ROOT / "experiment_a"
-    output_dir.mkdir(parents=True, exist_ok=True)
+        # Persist this row immediately so a later crash doesn't lose the work.
+        output_file = _append_row_to_csv(row, model_name, task, format)
+        print(f"Row saved (Q={quality}) -> {output_file}")
 
-    output_file = output_dir / f"{model_name}_arcade_{task}_{format}_results.csv"
+        # Release model + loaders before the next quality level to keep
+        # GPU/CPU memory from creeping upward over the 13-iteration loop.
+        del model, checkpoint, test_loader
+        gc.collect()
+        if device.type == 'cuda':
+            torch.cuda.empty_cache()
 
-    if output_file.exists():
-        existing = pd.read_csv(output_file)
-        retrained_q = df['train_quality'].tolist()
-        existing = existing[~existing['train_quality'].isin(retrained_q)]
-        df = pd.concat([existing, df], ignore_index=True)
-        df = df.sort_values('train_quality', ascending=False).reset_index(drop=True)
-
-    df.to_csv(output_file, index=False)
-    print(f"\nResults saved to: {output_file}")
-
+    print(f"\nAll {len(results)} quality levels finished for {model_name}/{format}")
     return results
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="resnet50", choices=config.SUPPORTED_MODELS)
-    parser.add_argument("--task", type=str, default="syntax", choices=["syntax", "stenosis"],
+    parser.add_argument("--task", type=str, default="syntax", choices=["syntax"],
                        help="ARCADE task")
     parser.add_argument("--format", type=str, default="jpeg", choices=["jpeg", "jpeg2000", "avif"],
                        help="Compression format")

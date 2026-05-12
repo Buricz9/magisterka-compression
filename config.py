@@ -1,5 +1,10 @@
 """Configuration for compression experiments on ARCADE dataset."""
 import os
+
+# Must be set BEFORE `import torch` for cuBLAS to pick it up at CUDA-init time.
+# Required by torch.use_deterministic_algorithms / cudnn.deterministic.
+os.environ.setdefault('CUBLAS_WORKSPACE_CONFIG', ':4096:8')
+
 import random
 import numpy as np
 import torch
@@ -51,8 +56,8 @@ def set_seed(seed: int = RANDOM_SEED):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-
-    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+    # NOTE: CUBLAS_WORKSPACE_CONFIG is set at module load time (top of file)
+    # because cuBLAS only reads it during CUDA initialization.
 
 
 def get_data_path(task, split, quality=None, format=None):

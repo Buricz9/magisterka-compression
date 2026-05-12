@@ -43,7 +43,7 @@ def run_baseline(model_name, task, num_epochs, batch_size, device):
                                  batch_size=batch_size, num_workers=config.NUM_WORKERS)
     num_classes = test_loader.dataset.num_classes
     model = create_model(model_name, num_classes).to(device)
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model.load_state_dict(checkpoint['model_state_dict'])
 
     test_metrics = evaluate_model(model, test_loader, device)

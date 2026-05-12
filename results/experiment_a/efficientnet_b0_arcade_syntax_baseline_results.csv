@@ -1,2 +1,0 @@
-experiment_id,format,train_quality,test_quality,best_val_score,primary_metric,test_subset_accuracy,test_hamming_accuracy,test_f1_macro,test_f1_micro,test_map
-efficientnet_b0_syntax_baseline_20260506_214438,baseline,baseline,baseline,61.217595679847406,f1_macro,0.08,0.8852564102564102,0.5800551899501716,0.7616511318242344,0.6176177561114798

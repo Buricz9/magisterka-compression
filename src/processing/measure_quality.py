@@ -3,6 +3,10 @@ import sys
 from pathlib import Path
 import numpy as np
 from PIL import Image
+try:
+    import pillow_avif  # noqa: F401  # registers AVIF plugin; matches encoder side
+except ImportError:
+    pass
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
 import pandas as pd
@@ -40,9 +44,14 @@ def calculate_metrics(baseline_path, compressed_path):
         psnr_value = psnr(baseline, compressed, data_range=255)
         ssim_value = ssim(baseline, compressed, data_range=255, channel_axis=2, win_size=7)
 
-        baseline_size = baseline_path.stat().st_size
+        # RAW-based CR: raw_pixel_bytes / compressed_file_bytes.
+        # Matches the JPEG2000 / DICOM / AVIF literature convention and the
+        # definition used by compress_images.get_compression_ratio.
+        raw_size = baseline.shape[0] * baseline.shape[1] * baseline.shape[2]
         compressed_size = compressed_path.stat().st_size
-        compression_ratio = baseline_size / compressed_size if compressed_size > 0 else 0
+        compression_ratio = (
+            raw_size / compressed_size if compressed_size > 0 else float("nan")
+        )
 
         return {
             "psnr": psnr_value,

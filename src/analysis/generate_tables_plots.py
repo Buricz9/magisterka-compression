@@ -99,7 +99,7 @@ def generate_latex_table_experiment_a(
     """
     # Group by format and quality
     grouped = df.groupby(['format', 'train_quality']).agg({
-        'test_accuracy': ['mean', 'std'],
+        'test_hamming_accuracy': ['mean', 'std'],
         'test_f1_macro': ['mean', 'std']
     }).reset_index()
 
@@ -168,7 +168,7 @@ def generate_latex_table_experiment_b(
     """
     # Group by format and quality
     grouped = df.groupby(['format', 'test_quality']).agg({
-        'test_accuracy': ['mean', 'std'],
+        'test_hamming_accuracy': ['mean', 'std'],
         'test_f1_macro': ['mean', 'std']
     }).reset_index()
 
@@ -247,7 +247,7 @@ def generate_comparison_plot(
 
             if not fmt_data.empty:
                 x = fmt_data['train_quality']
-                y = fmt_data['test_accuracy'] * 100
+                y = fmt_data['test_hamming_accuracy'] * 100
 
                 ax.plot(x, y, marker='o', linewidth=2, markersize=8, label=fmt.upper())
                 ax.fill_between(x, y - 2, y + 2, alpha=0.2)  # Confidence interval approximation
@@ -278,7 +278,7 @@ def generate_comparison_plot(
 
             if not fmt_data.empty:
                 x = fmt_data['test_quality']
-                y = fmt_data['test_accuracy'] * 100
+                y = fmt_data['test_hamming_accuracy'] * 100
 
                 ax.plot(x, y, marker='s', linewidth=2, markersize=8, label=fmt.upper(), color='red')
                 ax.fill_between(x, y - 2, y + 2, alpha=0.2, color='red')
@@ -312,9 +312,9 @@ def generate_comparison_plot(
             fmt_data = df_a[df_a['format'] == fmt]
             if not fmt_data.empty:
                 grouped = fmt_data.groupby('train_quality').agg({
-                    'test_accuracy': 'mean'
+                    'test_hamming_accuracy': 'mean'
                 }).reindex(qualities)
-                ax.plot(grouped.index, grouped['test_accuracy'] * 100,
+                ax.plot(grouped.index, grouped['test_hamming_accuracy'] * 100,
                        marker='o', label=fmt.upper(), linewidth=2)
 
         ax.set_xlabel('Jakość kompresji (Q)', fontsize=12)
@@ -330,9 +330,9 @@ def generate_comparison_plot(
             fmt_data = df_b[df_b['format'] == fmt]
             if not fmt_data.empty:
                 grouped = fmt_data.groupby('test_quality').agg({
-                    'test_accuracy': 'mean'
+                    'test_hamming_accuracy': 'mean'
                 }).reindex(qualities)
-                ax.plot(grouped.index, grouped['test_accuracy'] * 100,
+                ax.plot(grouped.index, grouped['test_hamming_accuracy'] * 100,
                        marker='s', label=fmt.upper(), linewidth=2)
 
         ax.set_xlabel('Jakość kompresji (Q)', fontsize=12)
@@ -364,12 +364,12 @@ def generate_comparison_plot(
             # Experiment A comparison
             ax = axes[0]
 
-            resnet_grouped = resnet_df.groupby('train_quality').agg({'test_accuracy': 'mean'})
-            efficientnet_grouped = efficientnet_df.groupby('train_quality').agg({'test_accuracy': 'mean'})
+            resnet_grouped = resnet_df.groupby('train_quality').agg({'test_hamming_accuracy': 'mean'})
+            efficientnet_grouped = efficientnet_df.groupby('train_quality').agg({'test_hamming_accuracy': 'mean'})
 
-            ax.plot(resnet_grouped.index, resnet_grouped['test_accuracy'] * 100,
+            ax.plot(resnet_grouped.index, resnet_grouped['test_hamming_accuracy'] * 100,
                    marker='o', label='ResNet-50', linewidth=2, markersize=8)
-            ax.plot(efficientnet_grouped.index, efficientnet_grouped['test_accuracy'] * 100,
+            ax.plot(efficientnet_grouped.index, efficientnet_grouped['test_hamming_accuracy'] * 100,
                    marker='s', label='EfficientNet-B0', linewidth=2, markersize=8)
 
             ax.set_xlabel('Jakość kompresji (Q)', fontsize=12)
@@ -416,7 +416,7 @@ def generate_summary_tables(
     if 'arcade_exp_a' in results:
         df = results['arcade_exp_a']
         summary_a = df.groupby(['format', 'train_quality']).agg({
-            'test_accuracy': ['mean', 'std', 'min', 'max'],
+            'test_hamming_accuracy': ['mean', 'std', 'min', 'max'],
             'test_f1_macro': ['mean', 'std']
         }).reset_index()
         summary_a.columns = ['format', 'quality', 'acc_mean', 'acc_std', 'acc_min', 'acc_max', 'f1_mean', 'f1_std']
@@ -427,7 +427,7 @@ def generate_summary_tables(
     if 'arcade_exp_b' in results:
         df = results['arcade_exp_b']
         summary_b = df.groupby(['format', 'test_quality']).agg({
-            'test_accuracy': ['mean', 'std', 'min', 'max'],
+            'test_hamming_accuracy': ['mean', 'std', 'min', 'max'],
             'test_f1_macro': ['mean', 'std']
         }).reset_index()
         summary_b.columns = ['format', 'quality', 'acc_mean', 'acc_std', 'acc_min', 'acc_max', 'f1_mean', 'f1_std']
@@ -448,14 +448,14 @@ def generate_summary_tables(
                 # Experiment A
                 exp_a_q = df_a[df_a['train_quality'] == q]
                 if not exp_a_q.empty:
-                    row['exp_a_acc_mean'] = exp_a_q['test_accuracy'].mean()
-                    row['exp_a_acc_std'] = exp_a_q['test_accuracy'].std()
+                    row['exp_a_acc_mean'] = exp_a_q['test_hamming_accuracy'].mean()
+                    row['exp_a_acc_std'] = exp_a_q['test_hamming_accuracy'].std()
 
                 # Experiment B
                 exp_b_q = df_b[df_b['test_quality'] == q]
                 if not exp_b_q.empty:
-                    row['exp_b_acc_mean'] = exp_b_q['test_accuracy'].mean()
-                    row['exp_b_acc_std'] = exp_b_q['test_accuracy'].std()
+                    row['exp_b_acc_mean'] = exp_b_q['test_hamming_accuracy'].mean()
+                    row['exp_b_acc_std'] = exp_b_q['test_hamming_accuracy'].std()
 
                 combined.append(row)
 

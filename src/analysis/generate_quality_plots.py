@@ -172,7 +172,7 @@ def plot_experiment_a_accuracy(output_dir):
 
     for fmt, color, marker in zip(formats, colors, markers):
         data = combined[combined['format'] == fmt].sort_values('train_quality')
-        ax.plot(data['train_quality'], data['test_accuracy'] * 100,
+        ax.plot(data['train_quality'], data['test_hamming_accuracy'] * 100,
                 marker=marker, linewidth=2, markersize=8,
                 label=fmt.upper(), color=color)
 
@@ -241,7 +241,7 @@ def plot_combined_ab(output_dir):
         csv_file = exp_a_path / f"resnet50_arcade_syntax_{fmt}_results.csv"
         if csv_file.exists():
             df = pd.read_csv(csv_file)
-            exp_a_data[fmt] = dict(zip(df['train_quality'], df['test_accuracy'] * 100))
+            exp_a_data[fmt] = dict(zip(df['train_quality'], df['test_hamming_accuracy'] * 100))
 
     # Experiment B data (from article)
     exp_b_data = {

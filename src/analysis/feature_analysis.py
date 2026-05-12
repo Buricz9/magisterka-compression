@@ -24,7 +24,7 @@ from datetime import datetime
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 import config
-from dataset import get_dataloader
+from src.core.dataset import get_dataloader
 
 
 class FeatureExtractor:
@@ -455,7 +455,7 @@ def analyze_layer_progression(
     Returns:
         Layer progression analysis results
     """
-    from train import create_model
+    from src.core.train import create_model
 
     # Load model
     # Use optimal num_workers for performance (min of 4 or CPU count)
@@ -464,7 +464,7 @@ def analyze_layer_progression(
 
     # Select appropriate dataloader based on dataset
     if dataset == 'isic':
-        from isic_dataset import get_isic_dataloader
+        from src.core.isic_dataset import get_isic_dataloader
         print("Using ISIC 2019 dataset for feature analysis")
         dataloader = get_isic_dataloader('test', quality=None, format=None,
                                         batch_size=16, num_workers=optimal_workers, shuffle=False)
@@ -577,27 +577,33 @@ def run_feature_analysis(
 
     # Generate report
     report_path = output_dir / f"feature_report_{experiment_id}.txt"
-    # Create a compatible structure for the report
+
+    # Average each per-depth metric into one scalar per metric.
+    metrics_by_depth = results['progression']['metrics_by_depth']
+    global_means = {}
+    for metric, values in metrics_by_depth.items():
+        if values:
+            global_means[f'global_mean_{metric}'] = sum(values) / len(values)
+        else:
+            global_means[f'global_mean_{metric}'] = 0
+
     report_data = {
         'comparison_date': results['analysis_date'],
         'model': results['model'],
         'task': results['task'],
         'formats': {
             'analyzed': {
-                'global': {
-                    k: v for k, v in results['progression']['metrics_by_depth'].items()
-                    for v in [sum(v) / len(v) if v else 0]
-                    for k in [f'global_mean_{metric}' for metric in results['progression']['metrics_by_depth'].keys()]
-                } | {'global_mean_spectral_entropy': sum(results['progression']['metrics_by_depth'].get('spectral_entropy', [0])) / max(len(results['progression']['metrics_by_depth'].get('spectral_entropy', [1])), 1),
-                     'global_mean_effective_rank': sum(results['progression']['metrics_by_depth'].get('effective_rank', [0])) / max(len(results['progression']['metrics_by_depth'].get('effective_rank', [1])), 1),
-                     'global_mean_stable_rank': sum(results['progression']['metrics_by_depth'].get('stable_rank', [0])) / max(len(results['progression']['metrics_by_depth'].get('stable_rank', [1])), 1)},
-                'per_layer': results['layer_results']
+                'global': global_means,
+                'per_layer': results['layer_results'],
             }
         },
         'global_comparison': {
-            metric: {'values': {'analyzed': sum(vals) / len(vals) if vals else 0}, 'best_format': 'analyzed'}
-            for metric, vals in results['progression']['metrics_by_depth'].items()
-        }
+            metric: {
+                'values': {'analyzed': sum(vals) / len(vals) if vals else 0},
+                'best_format': 'analyzed',
+            }
+            for metric, vals in metrics_by_depth.items()
+        },
     }
 
     # Save report as JSON instead

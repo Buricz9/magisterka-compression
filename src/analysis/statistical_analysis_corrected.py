@@ -478,7 +478,7 @@ def load_experiment_results(
     frames = []
 
     for fmt in config.COMPRESSION_FORMATS:
-        csv_path = results_dir / f"{model_name}_{task}_{fmt}_results.csv"
+        csv_path = results_dir / f"{model_name}_arcade_{task}_{fmt}_results.csv"
         if csv_path.exists():
             df = pd.read_csv(csv_path)
             frames.append(df)
@@ -491,7 +491,7 @@ def load_experiment_results(
 
 def analyze_format_comparison(
     df: pd.DataFrame,
-    metric_column: str = "test_accuracy",
+    metric_column: str = "test_hamming_accuracy",
     group_column: str = "format",
     experiment_type: str = "experiment_a"
 ) -> Dict:
@@ -776,7 +776,7 @@ def run_full_statistical_analysis(
         Dictionary with all analysis results
     """
     if metrics is None:
-        metrics = ['test_accuracy', 'test_f1_macro']
+        metrics = ['test_hamming_accuracy', 'test_f1_macro']
 
     if output_dir is None:
         output_dir = config.RESULTS_ROOT / "statistical_analysis"
@@ -861,7 +861,7 @@ def main():
         "--metrics",
         type=str,
         nargs="+",
-        default=["test_accuracy", "test_f1_macro"],
+        default=["test_hamming_accuracy", "test_f1_macro"],
         help="Metrics to analyze"
     )
     parser.add_argument(

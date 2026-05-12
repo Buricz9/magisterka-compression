@@ -10,6 +10,10 @@ from collections import defaultdict
 
 import numpy as np
 from PIL import Image
+try:
+    import pillow_avif  # noqa: F401  # registers AVIF plugin in Pillow
+except ImportError:
+    pass
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms

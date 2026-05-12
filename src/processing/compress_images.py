@@ -11,6 +11,10 @@ import sys
 import json
 from pathlib import Path
 from PIL import Image
+try:
+    import pillow_avif  # noqa: F401  # registers AVIF plugin in Pillow
+except ImportError:
+    pass
 import argparse
 from tqdm import tqdm
 
@@ -45,25 +49,31 @@ def compress_image_jpeg(input_path, output_path, quality):
 def compress_image_jpeg2000(input_path, output_path, compression_ratio):
     """Compress to JPEG2000 to match a target compression ratio.
 
-    Pillow/OpenJPEG's interpretation of `quality_layers` in `quality_mode="rates"`
-    systematically under-compresses (~4x off target). To get true CR matching,
-    we binary-search the rate parameter against the resulting on-disk size,
-    analogous to the AVIF code path.
+    `compression_ratio` is interpreted as RAW-based CR (raw_pixel_bytes / file_bytes),
+    matching JPEG2000 / DICOM / AVIF literature convention. Target file size is
+    therefore `raw_size / compression_ratio`, which equals the corresponding JPEG
+    file size for the matched-CR experimental setup.
+
+    Binary-searches OpenJPEG's `quality_layers` (in `quality_mode="rates"`) against
+    the resulting on-disk size. Always uses `irreversible=True` (9/7 wavelet, lossy)
+    and `mct=1` (Multi-Component Transform — RGB → YCbCr in the wavelet domain),
+    matching how Kakadu and other reference encoders treat RGB.
     """
     try:
         img = Image.open(input_path)
         if img.mode != "RGB":
             img = img.convert("RGB")
 
-        original_size = input_path.stat().st_size
-        target_size = max(1.0, original_size / compression_ratio)
+        raw_size = img.width * img.height * 3  # H x W x C, 8-bit RGB
+        target_size = max(1.0, raw_size / compression_ratio)
 
         # Search rate in [1, 1000]. Higher rate -> smaller file (more compression).
-        # rate=1.0 (lower bound) is the least-compressed lossy 9/7 wavelet output;
-        # for CR <= 1 (target_size >= original_size) the search converges to rate
-        # near 1.0, producing a high-quality lossy file (NOT lossless 5/3).
+        # rate=1.0 (lower bound) is the least-compressed lossy 9/7 wavelet output.
+        # With RAW-based CR the target_size is always smaller than raw_size, so
+        # the search always converges into the lossy regime.
         lo, hi = 1.0, 1000.0
-        best_rate = compression_ratio
+        best_rate = (lo + hi) / 2.0
+        best_size = None
         best_diff = float("inf")
         max_iterations = 20
         tolerance = 0.05 * target_size
@@ -76,6 +86,7 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
                 irreversible=True,
                 quality_mode="rates",
                 quality_layers=[mid],
+                mct=1,
             )
             actual_size = output_path.stat().st_size
             diff = abs(actual_size - target_size)
@@ -83,6 +94,7 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
             if diff < best_diff:
                 best_diff = diff
                 best_rate = mid
+                best_size = actual_size
 
             if diff < tolerance:
                 break
@@ -92,13 +104,25 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
             else:
                 hi = mid
 
-        img.save(
-            output_path,
-            "JPEG2000",
-            irreversible=True,
-            quality_mode="rates",
-            quality_layers=[best_rate],
-        )
+        # Re-save with best rate only if the last iteration wasn't the best,
+        # otherwise the on-disk file already corresponds to best_rate.
+        if best_size is None or output_path.stat().st_size != best_size:
+            img.save(
+                output_path,
+                "JPEG2000",
+                irreversible=True,
+                quality_mode="rates",
+                quality_layers=[best_rate],
+                mct=1,
+            )
+
+        if best_diff > tolerance:
+            print(
+                f"Warning (JPEG2000): {input_path.name}: tolerance not reached "
+                f"(target={target_size:.0f}B, actual={output_path.stat().st_size}B, "
+                f"diff={best_diff:.0f}B, rate={best_rate:.3f})"
+            )
+
         return True
     except Exception as e:
         print(f"Error (JPEG2000): {input_path.name}: {e}")
@@ -108,23 +132,39 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
 def compress_image_avif(input_path, output_path, compression_ratio):
     """Compress to AVIF format matching a target compression ratio.
 
-    AVIF (via pillow-avif-plugin) supports a quality parameter (0-100), but
-    quality=100 activates an internal lossless path (bit-exact equal to source).
-    To keep the comparison purely lossy, the search is capped at quality=99.
+    `compression_ratio` is interpreted as RAW-based CR (raw_pixel_bytes / file_bytes),
+    matching JPEG2000 / DICOM / AVIF literature convention. Target file size is
+    therefore `raw_size / compression_ratio`, which equals the corresponding JPEG
+    file size for the matched-CR experimental setup.
+
+    Binary-searches `quality` against the resulting on-disk size. Notes:
+      * `quality=100` in pillow-avif-plugin activates an internal lossless path
+        (bit-exact equal to source), so the search is capped at quality=99.
+      * `subsampling="4:4:4"` matches JPEG's `subsampling=0`, keeping the chroma
+        policy consistent across formats.
+      * `speed=6` and `range="full"` are pinned to make the comparison
+        reproducible across libavif versions.
     """
     try:
         img = Image.open(input_path)
         if img.mode != "RGB":
             img = img.convert("RGB")
 
-        original_size = input_path.stat().st_size
-        target_size = max(1.0, original_size / compression_ratio)
+        raw_size = img.width * img.height * 3  # H x W x C, 8-bit RGB
+        target_size = max(1.0, raw_size / compression_ratio)
+
+        avif_kwargs = {
+            "subsampling": "4:4:4",
+            "speed": 6,
+            "range": "full",
+        }
 
         # Binary search for the quality that gives closest CR.
         # hi=99 (not 100) because quality=100 in pillow-avif-plugin is lossless;
         # we want every comparison point to be genuinely lossy.
         lo, hi = 1, 99
-        best_quality = 50
+        best_quality = (lo + hi) // 2
+        best_size = None
         best_diff = float("inf")
         max_iterations = 20  # Limit iterations for efficiency
         tolerance = 0.05 * target_size  # Stop if within 5% of target
@@ -132,13 +172,14 @@ def compress_image_avif(input_path, output_path, compression_ratio):
         iterations = 0
         while lo <= hi and iterations < max_iterations:
             mid = (lo + hi) // 2
-            img.save(output_path, "AVIF", quality=mid)
+            img.save(output_path, "AVIF", quality=mid, **avif_kwargs)
             actual_size = output_path.stat().st_size
             diff = abs(actual_size - target_size)
 
             if diff < best_diff:
                 best_diff = diff
                 best_quality = mid
+                best_size = actual_size
 
             # Early stopping if close enough
             if diff < tolerance:
@@ -152,7 +193,16 @@ def compress_image_avif(input_path, output_path, compression_ratio):
             iterations += 1
 
         best_quality = min(best_quality, 99)
-        img.save(output_path, "AVIF", quality=best_quality)
+        if best_size is None or output_path.stat().st_size != best_size:
+            img.save(output_path, "AVIF", quality=best_quality, **avif_kwargs)
+
+        if best_diff > tolerance:
+            print(
+                f"Warning (AVIF): {input_path.name}: tolerance not reached "
+                f"(target={target_size:.0f}B, actual={output_path.stat().st_size}B, "
+                f"diff={best_diff:.0f}B, quality={best_quality})"
+            )
+
         return True
     except Exception as e:
         print(f"Error (AVIF): {input_path.name}: {e}")
@@ -170,12 +220,24 @@ def get_extension(fmt):
 
 
 def get_compression_ratio(original_path, compressed_path):
-    """Calculate compression ratio = original_size / compressed_size."""
-    original_size = original_path.stat().st_size
+    """Calculate compression ratio = raw_size / compressed_size.
+
+    Follows the convention used in JPEG2000 reference (ISO 15444), DICOM/medical
+    imaging literature, and AVIF/AV1 benchmarks: the numerator is the size of
+    the uncompressed pixel buffer (H x W x C x bytes_per_sample), NOT the size
+    of an already-compressed reference file (PNG). This keeps CR independent of
+    the source-file encoder's efficiency and guarantees CR > 1 for genuinely
+    lossy compression.
+
+    For 8-bit RGB images: raw_size = width * height * 3.
+    """
+    with Image.open(original_path) as img:
+        w, h = img.size
+    raw_size = w * h * 3
     compressed_size = compressed_path.stat().st_size
-    if compressed_size == 0:
-        return 0.0
-    return original_size / compressed_size
+    if compressed_size <= 0:
+        return float("nan")
+    return raw_size / compressed_size
 
 
 def compress_dataset_jpeg(task, split, quality_levels, force=False):
@@ -304,7 +366,7 @@ def main():
     args = parser.parse_args()
 
     quality_levels = config.QUALITY_LEVELS_MVP if args.mvp else config.QUALITY_LEVELS
-    tasks = ["syntax"] if args.task == "all" else [args.task]  # Default to syntax only
+    tasks = config.TASKS if args.task == "all" else [args.task]
     splits = ["train", "val", "test"] if args.split == "all" else [args.split]
     formats = config.COMPRESSION_FORMATS if args.format == "all" else [args.format]
 

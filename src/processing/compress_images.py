@@ -56,14 +56,12 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
             img = img.convert("RGB")
 
         original_size = input_path.stat().st_size
-
-        if compression_ratio <= 1.0:
-            img.save(output_path, "JPEG2000")
-            return True
-
-        target_size = original_size / compression_ratio
+        target_size = max(1.0, original_size / compression_ratio)
 
         # Search rate in [1, 1000]. Higher rate -> smaller file (more compression).
+        # rate=1.0 (lower bound) is the least-compressed lossy 9/7 wavelet output;
+        # for CR <= 1 (target_size >= original_size) the search converges to rate
+        # near 1.0, producing a high-quality lossy file (NOT lossless 5/3).
         lo, hi = 1.0, 1000.0
         best_rate = compression_ratio
         best_diff = float("inf")
@@ -110,8 +108,9 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
 def compress_image_avif(input_path, output_path, compression_ratio):
     """Compress to AVIF format matching a target compression ratio.
 
-    AVIF (via Pillow) only supports a quality parameter (0-100), so we use
-    binary search to find the quality value that produces the closest CR.
+    AVIF (via pillow-avif-plugin) supports a quality parameter (0-100), but
+    quality=100 activates an internal lossless path (bit-exact equal to source).
+    To keep the comparison purely lossy, the search is capped at quality=99.
     """
     try:
         img = Image.open(input_path)
@@ -119,16 +118,12 @@ def compress_image_avif(input_path, output_path, compression_ratio):
             img = img.convert("RGB")
 
         original_size = input_path.stat().st_size
+        target_size = max(1.0, original_size / compression_ratio)
 
-        if compression_ratio <= 1.0:
-            img.save(output_path, "AVIF", quality=100)
-            return True
-
-        target_size = original_size / compression_ratio
-
-        # Binary search for the quality that gives closest CR
-        # Limit iterations to prevent infinite loops
-        lo, hi = 1, 100
+        # Binary search for the quality that gives closest CR.
+        # hi=99 (not 100) because quality=100 in pillow-avif-plugin is lossless;
+        # we want every comparison point to be genuinely lossy.
+        lo, hi = 1, 99
         best_quality = 50
         best_diff = float("inf")
         max_iterations = 20  # Limit iterations for efficiency
@@ -156,7 +151,7 @@ def compress_image_avif(input_path, output_path, compression_ratio):
 
             iterations += 1
 
-        # Save with the best quality found
+        best_quality = min(best_quality, 99)
         img.save(output_path, "AVIF", quality=best_quality)
         return True
     except Exception as e:

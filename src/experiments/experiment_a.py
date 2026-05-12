@@ -88,7 +88,8 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size, d
         row.update({f'test_{k}': v for k, v in test_metrics.items()})
         results.append(row)
 
-    # Save results
+    # Save results — merge with existing CSV so partial reruns (e.g. only Q=100)
+    # update those rows without erasing results for other quality levels.
     df = pd.DataFrame(results)
     output_dir = config.RESULTS_ROOT / "experiment_a"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -98,6 +99,13 @@ def run_experiment_a(model_name, task, quality_levels, num_epochs, batch_size, d
         output_file = output_dir / f"{model_name}_{dataset}_{format}_results.csv"
     else:
         output_file = output_dir / f"{model_name}_{dataset}_{task_param}_{format}_results.csv"
+
+    if output_file.exists():
+        existing = pd.read_csv(output_file)
+        retrained_q = df['train_quality'].tolist()
+        existing = existing[~existing['train_quality'].isin(retrained_q)]
+        df = pd.concat([existing, df], ignore_index=True)
+        df = df.sort_values('train_quality', ascending=False).reset_index(drop=True)
 
     df.to_csv(output_file, index=False)
     print(f"\nResults saved to: {output_file}")
@@ -117,10 +125,17 @@ def main():
     parser.add_argument("--epochs", type=int, default=config.NUM_EPOCHS)
     parser.add_argument("--batch-size", type=int, default=config.BATCH_SIZE)
     parser.add_argument("--mvp", action="store_true")
+    parser.add_argument("--quality", type=int, default=None,
+                       help="Train on a single quality level only (overrides --mvp)")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
-    quality_levels = config.QUALITY_LEVELS_MVP if args.mvp else config.QUALITY_LEVELS
+    if args.quality is not None:
+        quality_levels = [args.quality]
+    elif args.mvp:
+        quality_levels = config.QUALITY_LEVELS_MVP
+    else:
+        quality_levels = config.QUALITY_LEVELS
 
     # For ISIC, ignore task parameter
     task = args.task if args.dataset == 'arcade' else None

@@ -83,6 +83,12 @@ def generate_latex_table_experiment_a(
     latex.append("Format & Q & Test Acc (\\%) & F1-Macro (\\%) \\\\")
     latex.append("\\hline")
 
+    def _fmt(mean, std):
+        # Pandas std with n=1 produces NaN — render as just the mean.
+        if pd.isna(std):
+            return f"${mean:.2f}$"
+        return f"${mean:.2f} \\pm {std:.2f}$"
+
     for fmt in ['jpeg', 'jpeg2000', 'avif']:
         fmt_data = grouped[grouped['format'] == fmt].sort_values('quality')
 
@@ -90,14 +96,13 @@ def generate_latex_table_experiment_a(
             for _, row in fmt_data.iterrows():
                 quality = row['quality']
                 acc_mean = row['acc_mean'] * 100
-                acc_std = row['acc_std'] * 100
+                acc_std = row['acc_std'] * 100 if pd.notna(row['acc_std']) else float('nan')
                 f1_mean = row['f1_mean'] * 100
-                f1_std = row['f1_std'] * 100
+                f1_std = row['f1_std'] * 100 if pd.notna(row['f1_std']) else float('nan')
 
                 latex.append(
                     f"{fmt.upper()} & {quality} & "
-                    f"${acc_mean:.2f} \\pm {acc_std:.2f}$ & "
-                    f"${f1_mean:.2f} \\pm {f1_std:.2f}$ \\\\"
+                    f"{_fmt(acc_mean, acc_std)} & {_fmt(f1_mean, f1_std)} \\\\"
                 )
 
     latex.append("\\hline")

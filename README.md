@@ -121,11 +121,17 @@ python -m src.analysis.statistical_analysis_corrected --experiment experiment_a 
 
 ## Known issues / metodologiczne caveats
 
-- **Klasy 11 i 25 nie występują w zbiorze treningowym** (out of 26 SYNTAX classes). Wpływ na mAP — raportujemy `n_classes_present`.
-- **Imbalance 18×** między klasą najczęstszą a najrzadszą — rozwiązane przez `pos_weight` w `BCEWithLogitsLoss`.
+- **Klasy puste w ARCADE/Syntax**:
+  - **Klasa id=26 ("stenosis"): 0 pozytywów we WSZYSTKICH 3 splitach.** F1 i AP dla tej klasy są undefined; metryki w `evaluate_model` filtrują klasy bez pozytywów (raportujemy `n_classes_present`).
+  - **Klasa id=12 ("10a"): 0 w test, 1 w train, 6 w val.** Ekstremalny minority case. `pos_weight` dla niej będzie ~999.
+  - **Założenie z poprzedniej wersji (klasy 11/25 puste) jest FAŁSZYWE** — id=11 ma 21 próbek w train, id=25 ma 127.
+- **Heterogeniczność mode na dysku**: val/test są 100% mode `L` (1 kanał); train ma mieszankę 451 mode `L` + 549 mode `RGB` (grayscale duplikowany do 3 kanałów). Pipeline konwertuje wszystko do RGB w `__getitem__`. `get_compression_ratio` używa liczby kanałów ZE ŹRÓDŁA (`len(img.getbands())`), więc CR jest semantycznie spójne z ilością informacji.
+- **Imbalance ~537× w train** (klasa najczęstsza vs najrzadsza niezerowa — id=6 vs id=12) — rozwiązane przez `pos_weight` w `BCEWithLogitsLoss`.
+- **JPEG2000 CR floor ~6**: dla obrazów 512×512 minimalna osiągalna kompresja JP2 (`rate=1.0`) daje plik ~120 kB → CR ≈ 6.5. Dla target_CR < ~6 (JPEG QF=100/95/90 daje takie wartości) binary search "klina się" i wszystkie te punkty produkują IDENTYCZNY plik JP2. **Wyniki klasyfikacji JP2 dla Q={100,95,90} są więc nierozróżnialne** — to ograniczenie OpenJPEG dla obrazów medycznych o niskiej entropii, nie bug kodu. Kod emituje warning `[JP2 lossy floor — target CR unreachable]` dla każdego takiego obrazu.
 - **`n=1` per (format, Q)** — testy statystyczne (t-test, ANOVA) na 13 punktach Q traktowanych jako próba IID są dyskusyjne. Lepiej raportować `mean ± std` po Q jako opisówkę.
-- **Subsampling JPEG vs AVIF** — oba 4:4:4, zgodnie z metodologią. JP2 ma analogicznie `mct=1` (RGB → YCbCr w domenie falkowej).
-- **Edge case Q=100**: JPEG Q=100 z 4:4:4 może być większy niż źródłowy PNG (PNG to bezstratny deflate, świetny dla angiografii z dużym czarnym tłem). Binary search dla JP2/AVIF dopasowuje rozmiar do `S_JPEG` — może wypisać warning gdy target nie do osiągnięcia, plik wychodzi mniejszy, ale wciąż stratny.
+- **Subsampling JPEG vs AVIF** — oba 4:4:4. JP2 ma analogicznie `mct=1` (RGB → YCbCr w domenie falkowej).
+- **Brak `RandomHorizontalFlip` w augmentacji train** — angiografia ma asymetrię LCA (lewa tętnica wieńcowa, segmenty 5-15) vs RCA (prawa, 1-4); flip horyzontalny zmienia stronę i tym samym klasę. Augmentacja ograniczona do `RandomRotation(±15°) + ColorJitter`.
+- **Edge case Q=100 dla JPEG**: JPEG Q=100 z 4:4:4 może być większy niż źródłowy PNG (PNG to bezstratny deflate, świetny dla angiografii z dużym czarnym tłem). Binary search dla JP2/AVIF dopasowuje rozmiar do `S_JPEG` — może wypisać warning gdy target nie do osiągnięcia.
 
 ## Datasety
 

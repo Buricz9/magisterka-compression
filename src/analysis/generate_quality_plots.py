@@ -45,7 +45,7 @@ def load_quality_metrics():
 
     if not all_data:
         print("[ERROR] No quality_*.csv files found in results/metrics/")
-        return None
+        return None, None
 
     # Combine all data
     combined = pd.concat(all_data, ignore_index=True)

@@ -43,9 +43,21 @@ def create_model(model_name, num_classes):
 
 
 def _epoch_score(outputs_all, labels_all):
-    """Macro F1 at threshold 0.5 (in %). logits > 0 == sigmoid > 0.5."""
+    """Macro F1 at threshold 0.5 (in %). logits > 0 == sigmoid > 0.5.
+
+    Averaged only over classes with at least one positive in this batch
+    of labels — otherwise classes that don't appear in the split (e.g. class
+    "stenosis" in ARCADE has 0 positives in every split) would deterministically
+    contribute F1=0 and drag the macro average down.
+    """
     preds = (outputs_all > 0).astype(np.int8)
-    return 100.0 * f1_score(labels_all, preds, average='macro', zero_division=0)
+    present = labels_all.sum(axis=0) > 0
+    if not present.any():
+        return 0.0
+    return 100.0 * f1_score(
+        labels_all[:, present], preds[:, present],
+        average='macro', zero_division=0,
+    )
 
 
 def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None, use_amp=True):
@@ -83,8 +95,13 @@ def train_epoch(model, dataloader, criterion, optimizer, device, scaler=None, us
     return running_loss / total, _epoch_score(outputs_all, labels_all)
 
 
-def validate(model, dataloader, criterion, device, use_amp=True):
-    """Validate the model with optional AMP for consistency with training."""
+def validate(model, dataloader, criterion, device, use_amp=False):
+    """Validate the model.
+
+    AMP is disabled by default so that val F1 is computed in fp32, matching
+    evaluate_model() — otherwise val vs test scores diverge by 0.5-2 pp from
+    autocast rounding alone, which makes early-stopping signals noisy.
+    """
     model.eval()
     running_loss, total = 0.0, 0
     out_chunks, lbl_chunks = [], []
@@ -129,20 +146,35 @@ def evaluate_model(model, dataloader, device):
 
     scores = 1.0 / (1.0 + np.exp(-outputs_all))  # sigmoid for mAP
     preds = (outputs_all > 0).astype(np.int8)
-    # mAP only over classes with at least one positive sample
+    # Mask classes with no positive samples in this split. ARCADE has classes
+    # that are 0-positive in every split (e.g. "stenosis") and a class that is
+    # 0-positive only in test ("10a"); without masking they deterministically
+    # contribute F1=0 / undefined AP and distort the macro average.
     present = labels_all.sum(axis=0) > 0
+    n_classes_present = int(present.sum())
     if present.any():
         map_score = float(average_precision_score(
             labels_all[:, present], scores[:, present], average='macro'
         ))
+        f1_macro = float(f1_score(
+            labels_all[:, present], preds[:, present],
+            average='macro', zero_division=0,
+        ))
+        f1_micro = float(f1_score(
+            labels_all[:, present], preds[:, present],
+            average='micro', zero_division=0,
+        ))
     else:
         map_score = 0.0
+        f1_macro = 0.0
+        f1_micro = 0.0
     return {
         'subset_accuracy': float((preds == labels_all).all(axis=1).mean()),
         'hamming_accuracy': float(1.0 - hamming_loss(labels_all, preds)),
-        'f1_macro': float(f1_score(labels_all, preds, average='macro', zero_division=0)),
-        'f1_micro': float(f1_score(labels_all, preds, average='micro', zero_division=0)),
+        'f1_macro': f1_macro,
+        'f1_micro': f1_micro,
         'map': map_score,
+        'n_classes_present': n_classes_present,
     }
 
 
@@ -192,7 +224,8 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
         print(f"\nEpoch {epoch}/{num_epochs}")
 
         train_loss, train_score = train_epoch(model, train_loader, criterion, optimizer, device, scaler, use_amp)
-        val_loss, val_score = validate(model, val_loader, criterion, device, use_amp)
+        # Validation runs in fp32 regardless of training AMP (see validate() docstring).
+        val_loss, val_score = validate(model, val_loader, criterion, device, use_amp=False)
         scheduler.step()
 
         history['train_loss'].append(train_loss)

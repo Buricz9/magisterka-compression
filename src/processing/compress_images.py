@@ -61,10 +61,13 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
     """
     try:
         img = Image.open(input_path)
+        # Read channel count BEFORE convert("RGB") so raw_size matches
+        # get_compression_ratio's definition (which uses the source mode).
+        source_channels = len(img.getbands())
         if img.mode != "RGB":
             img = img.convert("RGB")
 
-        raw_size = img.width * img.height * 3  # H x W x C, 8-bit RGB
+        raw_size = img.width * img.height * source_channels
         target_size = max(1.0, raw_size / compression_ratio)
 
         # Search rate in [1, 1000]. Higher rate -> smaller file (more compression).
@@ -117,10 +120,14 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
             )
 
         if best_diff > tolerance:
+            # If best_rate is pinned near `lo=1.0` we're at OpenJPEG's lossy
+            # minimum — the target CR is below the format's achievable floor
+            # (empirically ~6 for 512x512 grayscale angiograms with mct=1).
+            hint = " [JP2 lossy floor — target CR unreachable]" if best_rate < 1.5 else ""
             print(
                 f"Warning (JPEG2000): {input_path.name}: tolerance not reached "
                 f"(target={target_size:.0f}B, actual={output_path.stat().st_size}B, "
-                f"diff={best_diff:.0f}B, rate={best_rate:.3f})"
+                f"diff={best_diff:.0f}B, rate={best_rate:.3f}){hint}"
             )
 
         return True
@@ -147,10 +154,13 @@ def compress_image_avif(input_path, output_path, compression_ratio):
     """
     try:
         img = Image.open(input_path)
+        # Read channel count BEFORE convert("RGB") so raw_size matches
+        # get_compression_ratio's definition (which uses the source mode).
+        source_channels = len(img.getbands())
         if img.mode != "RGB":
             img = img.convert("RGB")
 
-        raw_size = img.width * img.height * 3  # H x W x C, 8-bit RGB
+        raw_size = img.width * img.height * source_channels
         target_size = max(1.0, raw_size / compression_ratio)
 
         avif_kwargs = {
@@ -229,11 +239,14 @@ def get_compression_ratio(original_path, compressed_path):
     the source-file encoder's efficiency and guarantees CR > 1 for genuinely
     lossy compression.
 
-    For 8-bit RGB images: raw_size = width * height * 3.
+    Number of channels is read from the source image (1 for mode L, 3 for RGB,
+    4 for RGBA, …) rather than hardcoded — ARCADE mixes mode-L and grayscale-as-RGB.
+    Assumes 8-bit samples (1 byte/sample).
     """
     with Image.open(original_path) as img:
         w, h = img.size
-    raw_size = w * h * 3
+        c = len(img.getbands())
+    raw_size = w * h * c
     compressed_size = compressed_path.stat().st_size
     if compressed_size <= 0:
         return float("nan")

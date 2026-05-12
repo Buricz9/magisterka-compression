@@ -45,9 +45,11 @@ def calculate_metrics(baseline_path, compressed_path):
         ssim_value = ssim(baseline, compressed, data_range=255, channel_axis=2, win_size=7)
 
         # RAW-based CR: raw_pixel_bytes / compressed_file_bytes.
-        # Matches the JPEG2000 / DICOM / AVIF literature convention and the
-        # definition used by compress_images.get_compression_ratio.
-        raw_size = baseline.shape[0] * baseline.shape[1] * baseline.shape[2]
+        # Channel count is read from the SOURCE PNG (not the RGB-converted array)
+        # so the value matches compress_images.get_compression_ratio.
+        with Image.open(baseline_path) as src_img:
+            source_channels = len(src_img.getbands())
+        raw_size = baseline.shape[0] * baseline.shape[1] * source_channels
         compressed_size = compressed_path.stat().st_size
         compression_ratio = (
             raw_size / compressed_size if compressed_size > 0 else float("nan")

@@ -45,10 +45,12 @@ def get_transforms(split='train', target_size=(224, 224)):
     )
 
     if split == 'train':
-        # Data augmentation for training
+        # NOTE: no horizontal flip — angiography is anatomically asymmetric
+        # (LCA vs RCA are on opposite sides of the chest, mirroring relabels
+        # the segment). Vertical flip is also unsafe for the same reason.
+        # Mild rotation (≤15°) and ColorJitter stay since they preserve laterality.
         return transforms.Compose([
             transforms.Resize(target_size),
-            transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomRotation(degrees=15),
             transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
             transforms.ToTensor(),
@@ -193,15 +195,27 @@ def get_dataloader(task, split, quality=None, format=None, batch_size=16, num_wo
 
     dataset = ArcadeClassificationDataset(task, split, quality, format)
 
-    # Optimized DataLoader settings for performance
+    # Seed each worker so np/random state in augmentations is reproducible
+    # across runs (torch already seeds its own generator from base_seed).
+    def _worker_init(worker_id):
+        import random
+        seed = (torch.initial_seed() + worker_id) % (2**32)
+        np.random.seed(seed)
+        random.seed(seed)
+
+    generator = torch.Generator()
+    generator.manual_seed(config.RANDOM_SEED)
+
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
         pin_memory=True,
-        persistent_workers=num_workers > 0,  # Keep workers alive between epochs
-        prefetch_factor=2 if num_workers > 0 else None  # Prefetch 2 batches per worker
+        persistent_workers=num_workers > 0,
+        prefetch_factor=2 if num_workers > 0 else None,
+        worker_init_fn=_worker_init if num_workers > 0 else None,
+        generator=generator if shuffle else None,
     )
 
     return dataloader

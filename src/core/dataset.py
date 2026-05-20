@@ -95,10 +95,22 @@ class ArcadeClassificationDataset(Dataset):
         self.images_info = {img['id']: img for img in self.coco_data['images']}
 
         self.categories = {cat['id']: cat['name'] for cat in self.coco_data['categories']}
-        self.num_classes = len(self.categories)
 
-        sorted_category_ids = sorted(self.categories.keys())
-        self.category_to_idx = {cat_id: idx for idx, cat_id in enumerate(sorted_category_ids)}
+        # Class count and category_id->idx mapping are pinned to the fixed
+        # ARCADE/Syntax contract (category ids 1..26 -> indices 0..25) instead of
+        # being derived from each split's `categories` block. Per-split derivation
+        # (sorted(keys()) + enumerate) would silently desync the model head size
+        # and the label columns between splits if any split's COCO file omitted a
+        # 0-annotation category.
+        self.num_classes = config.NUM_CLASSES
+        self.category_to_idx = {cat_id: cat_id - 1 for cat_id in range(1, config.NUM_CLASSES + 1)}
+
+        unexpected = sorted(c for c in self.categories if c not in self.category_to_idx)
+        if unexpected:
+            raise ValueError(
+                f"{split}: COCO `categories` contains category_id(s) {unexpected} "
+                f"outside the expected ARCADE range 1..{config.NUM_CLASSES}."
+            )
 
         self.image_annotations = defaultdict(list)
         for ann in self.coco_data['annotations']:
@@ -110,9 +122,11 @@ class ArcadeClassificationDataset(Dataset):
         # potentially corrupt/extended COCO files.
         self.image_labels = {}
         unknown_cats = set()
+        skipped_no_annotations = 0
         for image_id in self.images_info.keys():
             annotations = self.image_annotations[image_id]
             if not annotations:
+                skipped_no_annotations += 1
                 continue
             label = np.zeros(self.num_classes, dtype=np.float32)
             for ann in annotations:
@@ -128,6 +142,12 @@ class ArcadeClassificationDataset(Dataset):
             warnings.warn(
                 f"{split}: skipped annotations with unknown category_id(s) "
                 f"{sorted(unknown_cats)} — not present in categories block."
+            )
+        if skipped_no_annotations:
+            import warnings
+            warnings.warn(
+                f"{split}: {skipped_no_annotations} image(s) with no annotations "
+                f"dropped from the dataset (not treated as negative samples)."
             )
 
         self.image_ids = list(self.image_labels.keys())
@@ -186,7 +206,7 @@ class ArcadeClassificationDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return image, label, image_id
+        return image, label, str(image_id)
 
 
 def get_dataloader(task, split, quality=None, format=None, batch_size=16, num_workers=4, shuffle=None):
@@ -210,13 +230,15 @@ def get_dataloader(task, split, quality=None, format=None, batch_size=16, num_wo
 
     dataset = ArcadeClassificationDataset(task, split, quality, format)
 
-    # Seed each worker so np/random state in augmentations is reproducible
-    # across runs (torch already seeds its own generator from base_seed).
+    # Seed each worker's RNGs so augmentations are reproducible across runs.
+    # torchvision v1 transforms (RandomRotation, ColorJitter) sample via the
+    # torch RNG — not np/random — so torch.manual_seed must be set here too.
     def _worker_init(worker_id):
         import random
         seed = (torch.initial_seed() + worker_id) % (2**32)
         np.random.seed(seed)
         random.seed(seed)
+        torch.manual_seed(seed)
 
     generator = torch.Generator()
     generator.manual_seed(config.RANDOM_SEED)

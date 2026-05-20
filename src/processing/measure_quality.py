@@ -42,11 +42,19 @@ def calculate_metrics(baseline_path, compressed_path):
             return None
 
         psnr_value = psnr(baseline, compressed, data_range=255)
-        # Cap PSNR=inf (bit-exact identical images) at 100 dB so downstream
-        # groupby.mean() doesn't get poisoned. With the lossy fixes in place
-        # this should never trigger for JP2/AVIF, but it's cheap insurance.
+        # PSNR=inf means MSE=0, i.e. the "compressed" image is bit-exact
+        # identical to the baseline. For lossy formats (JPEG/JP2/AVIF) this
+        # should NEVER happen and indicates a real bug (e.g. an encoder
+        # silently falling back to a lossless path). Do NOT mask it with a
+        # fake dB value — that would poison groupby().mean() and hide the
+        # regression. Store NaN instead: pandas mean() skips NaN by default,
+        # so the average stays honest and the missing point is visible in
+        # plots. The printed warning surfaces the offending file.
         if not np.isfinite(psnr_value):
-            psnr_value = 100.0
+            print(f"Warning: PSNR=inf (MSE=0, bit-exact identical) for "
+                  f"{compressed_path.name} — lossy compression produced a "
+                  f"lossless result. Recording NaN; investigate the encoder.")
+            psnr_value = np.nan
         ssim_value = ssim(baseline, compressed, data_range=255, channel_axis=2, win_size=7)
 
         # RAW-based CR: raw_pixel_bytes / compressed_file_bytes.
@@ -54,6 +62,19 @@ def calculate_metrics(baseline_path, compressed_path):
         # so the value matches compress_images.get_compression_ratio.
         with Image.open(baseline_path) as src_img:
             source_channels = len(src_img.getbands())
+            source_mode = src_img.mode
+        # raw_size assumes 8-bit samples (1 byte/sample). ARCADE PNGs are
+        # 8-bit, but assert it explicitly: a 16-bit source (mode I;16, I, F)
+        # would silently make CR 2x too low. If 16-bit images ever appear,
+        # this raises a readable error instead of producing wrong numbers.
+        # (Must stay consistent with compress_images.get_compression_ratio.)
+        if source_mode in ("I", "I;16", "I;16B", "I;16L", "F"):
+            raise ValueError(
+                f"{baseline_path.name}: non-8-bit source mode '{source_mode}'. "
+                f"CR formula assumes 8-bit samples; add a bits/8 factor "
+                f"(here and in compress_images.get_compression_ratio) and "
+                f"recompress before measuring."
+            )
         raw_size = baseline.shape[0] * baseline.shape[1] * source_channels
         compressed_size = compressed_path.stat().st_size
         compression_ratio = (
@@ -73,7 +94,20 @@ def calculate_metrics(baseline_path, compressed_path):
 def measure_quality(task, split, quality_levels, format='jpeg'):
     """Measure quality metrics for all images in a split."""
     baseline_dir = config.get_data_path(task, split, quality=None)
+
+    # Validate the baseline directory before globbing. Path.glob on a missing
+    # directory returns an empty iterator silently, which would otherwise
+    # write an empty (but valid-looking) quality CSV with no error.
+    if not baseline_dir.is_dir():
+        print(f"Error: baseline directory not found: {baseline_dir}. "
+              f"Skipping {task}/{split}/{format}.")
+        return
+
     baseline_images = sorted(list(baseline_dir.glob("*.png")))
+    if not baseline_images:
+        print(f"Error: no baseline .png images in {baseline_dir}. "
+              f"Skipping {task}/{split}/{format}.")
+        return
 
     # Get file extension for format
     extensions = {'jpeg': '.jpg', 'jpeg2000': '.jp2', 'avif': '.avif'}

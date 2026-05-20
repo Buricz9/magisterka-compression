@@ -3,7 +3,7 @@ Feature analysis module for compression experiments.
 
 Provides:
 - Feature map extraction from model layers
-- Spectral entropy (effective rank) calculation
+- SVD singular-value spectrum entropy and effective rank
 - Shannon entropy computation
 - Per-layer and global metric averaging
 - Information content comparison between models
@@ -54,12 +54,15 @@ class FeatureExtractor:
             self.features[name] = output.detach()
         return hook
 
-    def register_hooks(self, layer_types: Tuple = (nn.Conv2d, nn.Linear)) -> List[str]:
+    def register_hooks(self, layer_types: Tuple = (nn.Conv2d,)) -> List[str]:
         """
         Register forward hooks on specified layer types.
 
         Args:
-            layer_types: Tuple of layer types to hook
+            layer_types: Tuple of layer types to hook. Conv2d only by default —
+                nn.Linear outputs are 2D (B, features), which would make the
+                SVD-based metrics depend on batch size rather than per-image
+                structure.
 
         Returns:
             List of registered layer names
@@ -98,10 +101,14 @@ class FeatureExtractor:
 
 class SpectralEntropyCalculator:
     """
-    Calculate spectral entropy (effective rank) of feature maps.
+    Calculate SVD-spectrum entropy (effective rank) of feature maps.
 
-    Spectral entropy measures the information content and complexity
-    of feature representations based on the singular value distribution.
+    NOTE: "spectral" here refers to the spectrum of SINGULAR VALUES (SVD), not
+    an FFT/power spectrum. The entropy is computed over the distribution of
+    normalized singular values; `svd_entropy` is provided as an unambiguous alias.
+
+    It measures the information content and complexity of feature
+    representations based on the singular value distribution.
 
     Effective rank (erank) is defined as:
     erank = exp(H) where H = -sum(s_i * log(s_i)) and s_i are normalized singular values
@@ -125,7 +132,13 @@ class SpectralEntropyCalculator:
         if len(s) == 0:
             return np.array([])
         if s_sum < 1e-10:  # Use epsilon comparison for floating point safety
-            return np.ones_like(s) / len(s)
+            # A degenerate (all-zero / constant) feature map carries no
+            # information: return a one-hot distribution so Shannon entropy is 0
+            # and effective rank is 1. A uniform distribution would be wrong here
+            # — it would imply MAXIMUM entropy / full rank for an empty signal.
+            p = np.zeros_like(s)
+            p[0] = 1.0
+            return p
         return s / s_sum
 
     @staticmethod
@@ -205,23 +218,76 @@ class SpectralEntropyCalculator:
 
         return SpectralEntropyCalculator.shannon_entropy(s)
 
+    # Unambiguous alias — the entropy is over the SVD singular-value spectrum,
+    # not an FFT power spectrum.
+    svd_entropy = spectral_entropy
+
+    @staticmethod
+    def pixel_intensity_entropy(feature_map: torch.Tensor, bins: int = 256) -> float:
+        """
+        Shannon entropy (in bits) of the activation-value distribution.
+
+        Bins the feature-map values into a histogram and computes
+        -sum(p_i * log2(p_i)) over the normalized bin counts. Unlike treating
+        each element as its own probability mass (which grows as ~log(N) with
+        the number of elements), this is comparable across layers of different
+        spatial size. A constant feature map gives 0.
+
+        For batch inputs the per-sample entropy is averaged.
+
+        Args:
+            feature_map: Feature tensor; 4D inputs are treated as a batch.
+            bins: Number of histogram bins.
+
+        Returns:
+            Intensity entropy in bits (mean across batch if 4D).
+        """
+        if feature_map.dim() == 4:
+            entropies = [
+                SpectralEntropyCalculator.pixel_intensity_entropy(feature_map[i], bins)
+                for i in range(feature_map.shape[0])
+            ]
+            return float(np.mean(entropies)) if entropies else 0.0
+
+        values = feature_map.detach().cpu().numpy().ravel()
+        if values.size == 0:
+            return 0.0
+        vmin, vmax = float(values.min()), float(values.max())
+        if vmax - vmin < 1e-12:
+            return 0.0  # constant map carries no information
+        hist, _ = np.histogram(values, bins=bins, range=(vmin, vmax))
+        total = hist.sum()
+        if total == 0:
+            return 0.0
+        p = hist / total
+        return float(SpectralEntropyCalculator.shannon_entropy(p, base=2))
+
     @staticmethod
     def effective_rank(feature_map: torch.Tensor) -> float:
         """
         Calculate effective rank (erank) of a feature map.
 
-        Effective rank = exp(spectral_entropy)
+        Effective rank = exp(spectral_entropy) for a single sample.
 
-        For batch inputs, uses the mean spectral entropy.
+        For batch inputs the per-sample effective ranks are averaged:
+        mean_i(exp(H_i)) — NOT exp(mean_i(H_i)). The latter under-estimates the
+        rank by Jensen's inequality, since exp is convex.
 
         Args:
             feature_map: Feature tensor of shape (C, H, W) or (B, C, H, W)
 
         Returns:
-            Effective rank value
+            Effective rank value (mean across batch if batch dimension present)
         """
+        if feature_map.dim() == 4:
+            ranks = [
+                np.exp(SpectralEntropyCalculator.spectral_entropy(feature_map[i]))
+                for i in range(feature_map.shape[0])
+            ]
+            return float(np.mean(ranks)) if ranks else 1.0
+
         entropy = SpectralEntropyCalculator.spectral_entropy(feature_map)
-        return np.exp(entropy)
+        return float(np.exp(entropy))
 
     @staticmethod
     def stable_rank(feature_map: torch.Tensor) -> float:
@@ -292,7 +358,7 @@ class FeatureMapAnalyzer:
         self.extractor = FeatureExtractor(model, device)
         self.layer_names = []
 
-    def setup_hooks(self, layer_types: Tuple = (nn.Conv2d, nn.Linear)) -> None:
+    def setup_hooks(self, layer_types: Tuple = (nn.Conv2d,)) -> None:
         """
         Set up hooks for feature extraction.
 
@@ -324,12 +390,9 @@ class FeatureMapAnalyzer:
                 'spectral_entropy': SpectralEntropyCalculator.spectral_entropy(feature_map),
                 'effective_rank': SpectralEntropyCalculator.effective_rank(feature_map),
                 'stable_rank': SpectralEntropyCalculator.stable_rank(feature_map),
-                # Pixel entropy: Shannon entropy on normalized pixel values (different from spectral entropy)
-                'pixel_entropy': SpectralEntropyCalculator.shannon_entropy(
-                    SpectralEntropyCalculator.normalize_singular_values(
-                        feature_map.flatten().cpu().numpy()
-                    )
-                )
+                # Intensity entropy: Shannon entropy (bits) of the histogram of
+                # activation values — comparable across layers of different size.
+                'pixel_entropy': SpectralEntropyCalculator.pixel_intensity_entropy(feature_map),
             }
 
         return results
@@ -355,7 +418,7 @@ class FeatureMapAnalyzer:
         n_batches = 0
 
         for batch_idx, (images, labels, _) in enumerate(dataloader):
-            if max_batches and batch_idx >= max_batches:
+            if max_batches is not None and batch_idx >= max_batches:
                 break
 
             batch_results = self.analyze_single_batch(images)
@@ -372,14 +435,14 @@ class FeatureMapAnalyzer:
         # Average metrics
         averaged_results = {}
         for layer_name, metrics in layer_metrics.items():
-            averaged_results[layer_name] = {
-                metric: float(np.mean(values))
-                for metric, values in metrics.items()
-            }
-            averaged_results[layer_name]['std'] = {
-                metric: float(np.std(values))
-                for metric, values in metrics.items()
-            }
+            # Flatten std into `<metric>_std` scalars so every value under a
+            # layer has the same type — a nested 'std' dict alongside scalar
+            # metrics broke the uniform structure consumers expect.
+            layer_summary = {}
+            for metric, values in metrics.items():
+                layer_summary[metric] = float(np.mean(values))
+                layer_summary[f'{metric}_std'] = float(np.std(values))
+            averaged_results[layer_name] = layer_summary
 
         averaged_results['_metadata'] = {
             'n_batches': n_batches,
@@ -416,12 +479,8 @@ def analyze_layer_progression(
     from src.core.train import create_model
 
     # Load model
-    # Use optimal num_workers for performance (min of 4 or CPU count)
-    import os
-    optimal_workers = min(4, os.cpu_count() or 1)
-
     dataloader = get_dataloader(task, 'test', quality=None, format=None,
-                                batch_size=16, num_workers=optimal_workers, shuffle=False)
+                                batch_size=16, num_workers=config.NUM_WORKERS, shuffle=False)
 
     num_classes = dataloader.dataset.num_classes
 
@@ -443,7 +502,8 @@ def analyze_layer_progression(
         'metrics_by_depth': {
             'spectral_entropy': [],
             'effective_rank': [],
-            'stable_rank': []
+            'stable_rank': [],
+            'pixel_entropy': []
         }
     }
 
@@ -531,23 +591,15 @@ def run_feature_analysis(
         else:
             global_means[f'global_mean_{metric}'] = 0
 
+    # Single model/checkpoint per run — no multi-format comparison happens here,
+    # so the report is a flat structure (the old 'formats'/'global_comparison'
+    # wrapper with a hard-coded best_format='analyzed' was a misleading stub).
     report_data = {
-        'comparison_date': results['analysis_date'],
+        'analysis_date': results['analysis_date'],
         'model': results['model'],
         'task': results['task'],
-        'formats': {
-            'analyzed': {
-                'global': global_means,
-                'per_layer': results['layer_results'],
-            }
-        },
-        'global_comparison': {
-            metric: {
-                'values': {'analyzed': sum(vals) / len(vals) if vals else 0},
-                'best_format': 'analyzed',
-            }
-            for metric, vals in metrics_by_depth.items()
-        },
+        'global': global_means,
+        'per_layer': results['layer_results'],
     }
 
     # Save report as JSON instead

@@ -120,13 +120,24 @@ def compress_image_jpeg2000(input_path, output_path, compression_ratio):
             )
 
         if best_diff > tolerance:
-            # If best_rate is pinned near `lo=1.0` we're at OpenJPEG's lossy
-            # minimum — the target CR is below the format's achievable floor
-            # (empirically ~6 for 512x512 grayscale angiograms with mct=1).
-            hint = " [JP2 lossy floor — target CR unreachable]" if best_rate < 1.5 else ""
+            # `best_size` is the size measured for `best_rate` during the
+            # search; the file on disk corresponds to `best_rate` after the
+            # re-save above. Use it directly instead of re-reading the file,
+            # which would assume OpenJPEG re-encodes byte-deterministically.
+            actual_size = best_size if best_size is not None else output_path.stat().st_size
+            # best_rate pinned near `lo=1.0`: at OpenJPEG's lossy minimum,
+            # the target CR is below the format's achievable floor.
+            # best_rate pinned near `hi=1000.0`: target CR is above what the
+            # search range can reach (file still too large at max rate).
+            if best_rate < 1.5:
+                hint = " [JP2 lossy floor — target CR unreachable, file too large]"
+            elif best_rate > 999.0:
+                hint = " [JP2 rate ceiling — target CR unreachable, file too small]"
+            else:
+                hint = ""
             print(
                 f"Warning (JPEG2000): {input_path.name}: tolerance not reached "
-                f"(target={target_size:.0f}B, actual={output_path.stat().st_size}B, "
+                f"(target={target_size:.0f}B, actual={actual_size}B, "
                 f"diff={best_diff:.0f}B, rate={best_rate:.3f}){hint}"
             )
 
@@ -202,14 +213,18 @@ def compress_image_avif(input_path, output_path, compression_ratio):
 
             iterations += 1
 
-        best_quality = min(best_quality, 99)
+        # Note: best_quality is already bounded to [lo=1, hi=99] by the search,
+        # so no extra min(..., 99) clamp is needed here.
         if best_size is None or output_path.stat().st_size != best_size:
             img.save(output_path, "AVIF", quality=best_quality, **avif_kwargs)
 
         if best_diff > tolerance:
+            # Use the measured `best_size` for `best_quality` rather than
+            # re-reading the file (which assumes deterministic re-encoding).
+            actual_size = best_size if best_size is not None else output_path.stat().st_size
             print(
                 f"Warning (AVIF): {input_path.name}: tolerance not reached "
-                f"(target={target_size:.0f}B, actual={output_path.stat().st_size}B, "
+                f"(target={target_size:.0f}B, actual={actual_size}B, "
                 f"diff={best_diff:.0f}B, quality={best_quality})"
             )
 
@@ -246,6 +261,17 @@ def get_compression_ratio(original_path, compressed_path):
     with Image.open(original_path) as img:
         w, h = img.size
         c = len(img.getbands())
+        mode = img.mode
+    # raw_size assumes 8-bit samples (1 byte/sample). Assert it explicitly:
+    # a 16-bit source (mode I;16, I, F) would silently make CR 2x too low.
+    # Kept consistent with measure_quality.calculate_metrics.
+    if mode in ("I", "I;16", "I;16B", "I;16L", "F"):
+        raise ValueError(
+            f"{original_path.name}: non-8-bit source mode '{mode}'. "
+            f"CR formula assumes 8-bit samples; add a bits/8 factor "
+            f"(here and in measure_quality.calculate_metrics) and "
+            f"recompress before measuring."
+        )
     raw_size = w * h * c
     compressed_size = compressed_path.stat().st_size
     if compressed_size <= 0:
@@ -296,10 +322,21 @@ def compress_dataset_jpeg(task, split, quality_levels, force=False):
     for quality in todo_q:
         output_dir = config.get_data_path(task, split, quality=quality, format="jpeg")
         output_dir.mkdir(parents=True, exist_ok=True)
-        cr_map[str(quality)] = {}
+        # Preserve any partial results for this quality level (e.g. a previous
+        # run that crashed after some images) instead of resetting to {}.
+        # This gives per-image skip: a level that failed on one image no
+        # longer re-compresses every image from scratch (mirrors the
+        # per-file skip in compress_dataset_matched).
+        cr_map.setdefault(str(quality), {})
 
         for img_path in tqdm(image_files, desc=f"JPEG Q={quality}"):
             output_path = output_dir / f"{img_path.stem}.jpg"
+            # Skip images that already have a CR entry and a file on disk,
+            # unless forcing.
+            if (not force
+                    and img_path.stem in cr_map[str(quality)]
+                    and output_path.exists()):
+                continue
             success = compress_image_jpeg(img_path, output_path, quality)
             if success:
                 cr_map[str(quality)][img_path.stem] = get_compression_ratio(

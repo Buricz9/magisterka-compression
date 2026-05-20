@@ -4,6 +4,7 @@ Provides the upper-bound reference point for Experiment A — how well the
 model performs without any compression in the training pipeline. One run
 per model (format is irrelevant since baseline is uncompressed PNG).
 """
+import os
 import sys
 from pathlib import Path
 import torch
@@ -12,10 +13,9 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import config
-from core.train import train_model, evaluate_model, create_model
-from core.dataset import get_dataloader
+from src.core.train import train_model, evaluate_model, create_model
+from src.core.dataset import get_dataloader
 
 
 def run_baseline(model_name, task, num_epochs, batch_size, device):
@@ -61,7 +61,14 @@ def run_baseline(model_name, task, num_epochs, batch_size, device):
     output_dir = config.RESULTS_ROOT / "experiment_a"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{model_name}_arcade_{task}_baseline_results.csv"
-    pd.DataFrame([row]).to_csv(output_file, index=False)
+
+    # Baseline is a single-row, one-shot result, so a full overwrite is the
+    # intended semantics (a re-run replaces the stale row). Write to a temp
+    # file first and atomically rename, so a crash mid-write cannot leave a
+    # truncated/corrupt CSV in place of a previously valid baseline result.
+    tmp_file = output_file.parent / (output_file.name + '.tmp')
+    pd.DataFrame([row]).to_csv(tmp_file, index=False)
+    os.replace(tmp_file, output_file)
     print(f"\nBaseline result saved: {output_file}")
     return row
 

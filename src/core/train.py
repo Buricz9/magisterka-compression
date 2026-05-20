@@ -45,10 +45,11 @@ def create_model(model_name, num_classes):
 def _epoch_score(outputs_all, labels_all):
     """Macro F1 at threshold 0.5 (in %). logits > 0 == sigmoid > 0.5.
 
-    Averaged only over classes with at least one positive in this batch
-    of labels — otherwise classes that don't appear in the split (e.g. class
-    "stenosis" in ARCADE has 0 positives in every split) would deterministically
-    contribute F1=0 and drag the macro average down.
+    outputs_all / labels_all are the full epoch arrays (all batches concatenated
+    by the caller), not a single batch. Averaged only over classes with at least
+    one positive in this epoch's labels — otherwise classes that don't appear in
+    the split (e.g. class "stenosis" in ARCADE has 0 positives in every split)
+    would deterministically contribute F1=0 and drag the macro average down.
     """
     preds = (outputs_all > 0).astype(np.int8)
     present = labels_all.sum(axis=0) > 0
@@ -189,7 +190,7 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
 
     if experiment_id is None:
         quality_str = f"q{train_quality}" if train_quality else "baseline"
-        format_str = f"_{train_format}" if train_format and train_format != 'jpeg' else ""
+        format_str = f"_{train_format}" if train_format else ""
         experiment_id = f"{model_name}_{task}_{quality_str}{format_str}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     print(f"\nTraining: {experiment_id}")
@@ -236,7 +237,10 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
         print(f"Train - Loss: {train_loss:.4f}, F1-macro: {train_score:.2f}%")
         print(f"Val - Loss: {val_loss:.4f}, F1-macro: {val_score:.2f}%")
 
-        if val_score > best_val_score:
+        # `or best_val_score <= 0`: while the model hasn't started learning the
+        # score stays 0.0; ties 0.0 == 0.0 would otherwise fall through to `else`
+        # and nab the patience counter, triggering early stopping during warm-up.
+        if val_score > best_val_score or best_val_score <= 0:
             best_val_score, best_epoch, patience_counter = val_score, epoch, 0
             checkpoint_dir = config.get_checkpoint_path(experiment_id)
             checkpoint_path = checkpoint_dir / "best_model.pth"
@@ -253,6 +257,15 @@ def train_model(model_name, task, train_quality, val_quality, num_epochs,
             if patience_counter >= early_stopping_patience:
                 print(f"Early stopping at epoch {epoch}")
                 break
+
+    # Restore best weights into `model` so the in-function object matches the
+    # saved checkpoint. Callers reload the checkpoint from disk anyway, but this
+    # keeps `model` consistent if it is used directly after train_model() returns.
+    if best_epoch > 0:
+        best_ckpt = config.get_checkpoint_path(experiment_id) / "best_model.pth"
+        model.load_state_dict(
+            torch.load(best_ckpt, map_location=device, weights_only=True)['model_state_dict']
+        )
 
     # Save results with full metadata for reproducibility
     results = {

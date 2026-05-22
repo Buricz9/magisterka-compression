@@ -209,6 +209,22 @@ class ArcadeClassificationDataset(Dataset):
         return image, label, str(image_id)
 
 
+def _worker_init(worker_id):
+    """Seed a DataLoader worker's RNGs for reproducible augmentation.
+
+    Must be a module-level function (NOT a closure inside get_dataloader) so it
+    stays picklable: Windows uses the 'spawn' start method, which pickles
+    worker_init_fn to send it to each worker process — a nested function cannot
+    be pickled. torchvision v1 transforms (RandomRotation, ColorJitter) sample
+    via the torch RNG, so torch.manual_seed is seeded here alongside numpy/random.
+    """
+    import random
+    seed = (torch.initial_seed() + worker_id) % (2**32)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+
+
 def get_dataloader(task, split, quality=None, format=None, batch_size=16, num_workers=4, shuffle=None):
     """
     Create a DataLoader for ARCADE dataset.
@@ -229,16 +245,6 @@ def get_dataloader(task, split, quality=None, format=None, batch_size=16, num_wo
         shuffle = (split == 'train')
 
     dataset = ArcadeClassificationDataset(task, split, quality, format)
-
-    # Seed each worker's RNGs so augmentations are reproducible across runs.
-    # torchvision v1 transforms (RandomRotation, ColorJitter) sample via the
-    # torch RNG — not np/random — so torch.manual_seed must be set here too.
-    def _worker_init(worker_id):
-        import random
-        seed = (torch.initial_seed() + worker_id) % (2**32)
-        np.random.seed(seed)
-        random.seed(seed)
-        torch.manual_seed(seed)
 
     generator = torch.Generator()
     generator.manual_seed(config.RANDOM_SEED)

@@ -25,7 +25,7 @@ C:\Uczelnia\Magisterka\
 │   └── analysis/
 │       ├── generate_tables_plots.py    # LaTeX tables, comparison plots
 │       ├── generate_quality_plots.py   # PSNR/SSIM/CR plots
-│       ├── statistical_analysis_corrected.py  # t-test, ANOVA, Kruskal
+│       ├── statistical_analysis_corrected.py  # Friedman + paired t/Wilcoxon + Holm + TOST + mAP↔PSNR
 │       └── feature_analysis.py         # spectral entropy, effective rank
 ├── models/checkpoints/                 # ResNet/EfficientNet best.pth per (model, format, Q)
 ├── results/
@@ -128,7 +128,7 @@ python -m src.analysis.statistical_analysis_corrected --experiment experiment_a 
 - **Heterogeniczność mode na dysku**: val/test są 100% mode `L` (1 kanał); train ma mieszankę 451 mode `L` + 549 mode `RGB` (grayscale duplikowany do 3 kanałów). Pipeline konwertuje wszystko do RGB w `__getitem__`. `get_compression_ratio` używa liczby kanałów ZE ŹRÓDŁA (`len(img.getbands())`), więc CR jest semantycznie spójne z ilością informacji.
 - **Imbalance ~537× w train** (klasa najczęstsza vs najrzadsza niezerowa — id=6 vs id=12) — rozwiązane przez `pos_weight` w `BCEWithLogitsLoss`.
 - **JPEG2000 CR floor ~6**: dla obrazów 512×512 minimalna osiągalna kompresja JP2 (`rate=1.0`) daje plik ~120 kB → CR ≈ 6.5. Dla target_CR < ~6 (JPEG QF=100/95/90 daje takie wartości) binary search "klina się" i wszystkie te punkty produkują IDENTYCZNY plik JP2. **Wyniki klasyfikacji JP2 dla Q={100,95,90} są więc nierozróżnialne** — to ograniczenie OpenJPEG dla obrazów medycznych o niskiej entropii, nie bug kodu. Kod emituje warning `[JP2 lossy floor — target CR unreachable]` dla każdego takiego obrazu.
-- **`n=1` per (format, Q)** — testy statystyczne (t-test, ANOVA) na 13 punktach Q traktowanych jako próba IID są dyskusyjne. Lepiej raportować `mean ± std` po Q jako opisówkę.
+- **`n=1` per (format, Q)** — jeden trening (jedno ziarno) na warunek. Analiza statystyczna używa **poprawnego schematu sparowanego/blokowego** (poziomy Q jako bloki wspólne dla formatów): test Friedmana + Kendall's W, sparowany t-test i Wilcoxon z korektą Holm-Bonferroni, oraz TOST (równoważność). Mimo poprawnego designu, przy n=1 brak oszacowania zmienności wewnątrz-warunkowej — efekt < ~1–2 pp tonie w szumie treningu (σ≈0.7 pp mAP). Wynik raportujemy jako „brak dowodu na efekt", NIE „dowód braku efektu". Szczegóły i decyzje do uzgodnienia: `KWESTIE-DO-KONSULTACJI.md`.
 - **Subsampling JPEG vs AVIF** — oba 4:4:4. JP2 ma analogicznie `mct=1` (RGB → YCbCr w domenie falkowej).
 - **Brak `RandomHorizontalFlip` w augmentacji train** — angiografia ma asymetrię LCA (lewa tętnica wieńcowa, segmenty 5-15) vs RCA (prawa, 1-4); flip horyzontalny zmienia stronę i tym samym klasę. Augmentacja ograniczona do `RandomRotation(±15°) + ColorJitter`.
 - **Edge case Q=100 dla JPEG**: JPEG Q=100 z 4:4:4 może być większy niż źródłowy PNG (PNG to bezstratny deflate, świetny dla angiografii z dużym czarnym tłem). Binary search dla JP2/AVIF dopasowuje rozmiar do `S_JPEG` — może wypisać warning gdy target nie do osiągnięcia.
@@ -146,6 +146,6 @@ Aktualnie w repo jest tylko **Eksperyment A** — *trening na obrazach skompreso
 
 Implementacja będzie wymagała:
 - Nowy skrypt `src/experiments/experiment_b.py` (analog `experiment_a.py`): jeden trening na PNG → ewaluacja na obrazach skompresowanych z każdym Q × każdym formatem
-- Aktualizacja `statistical_analysis_corrected.py` — przywrócić opcję `--experiment experiment_b` z PAIRED t-test (te same próbki testowe przez wszystkie warunki) i Wilcoxon zamiast Mann-Whitney
+- Aktualizacja `statistical_analysis_corrected.py` — dodać obsługę `--experiment experiment_b`. Obecny potok jest już w pełni sparowany/blokowy (Friedman + paired t/Wilcoxon + Holm + TOST), więc wystarczy wczytywanie wyników Exp B; metodyka testów jest gotowa.
 - Aktualizacja `generate_tables_plots.py` — funkcje `generate_latex_table_experiment_b` i plot Exp B (został usunięty wraz z eksperymentem)
 - Decyzja metodologiczna: trenować na natywnie czytanych z dysku PNG, czy na losowo wybranym Q jako augmentation?

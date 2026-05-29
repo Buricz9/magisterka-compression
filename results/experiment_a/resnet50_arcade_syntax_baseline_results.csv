@@ -1,0 +1,2 @@
+experiment_id,format,train_quality,test_quality,best_val_score,primary_metric,test_subset_accuracy,test_hamming_accuracy,test_f1_macro,test_f1_micro,test_map,test_n_classes_present
+resnet50_syntax_baseline_20260521_103955,baseline,baseline,baseline,67.5850710429631,f1_macro,0.14333333333333334,0.8867948717948718,0.6783290176352402,0.779525593008739,0.6545928915570901,24

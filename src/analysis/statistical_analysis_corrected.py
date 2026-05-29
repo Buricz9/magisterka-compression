@@ -58,6 +58,16 @@ import config
 # metric. F1 at the fixed 0.5 threshold is auxiliary / supporting only.
 DEFAULT_METRICS = ['test_map', 'test_f1_macro', 'test_hamming_accuracy']
 
+# Metrics treated as PRIMARY (threshold-free, leading) vs SECONDARY (computed at
+# the fixed 0.5 threshold and therefore systematically sub-optimal under
+# pos_weight up to ~999 - interpret with caution; see KWESTIE pkt 2).
+PRIMARY_METRICS = {'test_map'}
+
+# Equivalence margins (Delta) for the TOST equivalence test, on the metric scale
+# (0.01 = 1 pp, 0.015 = 1.5 pp). The final Delta is a methodological decision for
+# the supervisor (KWESTIE pkt 7); both are reported as a sensitivity analysis.
+TOST_DELTAS = [0.01, 0.015]
+
 
 class StatisticalAnalyzer:
     """
@@ -374,6 +384,94 @@ class StatisticalAnalyzer:
             'statistic': float(statistic),
             'p_value': float(p_value),
             'significant': bool(p_value < self.alpha),
+        })
+        return base
+
+    def paired_tost(
+        self,
+        data1: np.ndarray,
+        data2: np.ndarray,
+        delta: float,
+        format1: str = "Format1",
+        format2: str = "Format2"
+    ) -> Dict:
+        """
+        Two One-Sided Tests (TOST) for paired-samples EQUIVALENCE.
+
+        A non-significant difference test (e.g. Friedman p>0.05) only means
+        "no evidence of a difference" - it cannot establish equivalence. TOST
+        tests the positive claim that the true mean difference lies within an
+        equivalence margin (-delta, +delta): it runs two one-sided paired
+        t-tests and takes the LARGER p-value. p < alpha => formats are
+        statistically equivalent within +/-delta.
+
+        Args:
+            data1, data2: metric values aligned by block (quality level).
+            delta: equivalence margin on the metric scale (e.g. 0.01 = 1 pp mAP).
+            format1, format2: format names.
+
+        Returns:
+            Dict with both one-sided p-values, the TOST p-value (their max),
+            the equivalence verdict, and the 90% CI of the mean difference.
+        """
+        data1 = np.asarray(data1, dtype=float)
+        data2 = np.asarray(data2, dtype=float)
+        n = len(data1)
+        diffs = data1 - data2
+
+        base = {
+            'test': 'paired_tost',
+            'comparison': f"{format1} vs {format2}",
+            'delta': float(delta),
+            'mean_diff': float(np.mean(diffs)) if n else float('nan'),
+            'p_lower': float('nan'),
+            'p_upper': float('nan'),
+            'p_tost': float('nan'),
+            'equivalent': False,
+            'ci90': [float('nan'), float('nan')],
+            'n_pairs': n,
+        }
+
+        if n < 3 or len(data2) != n:
+            base['warning'] = 'insufficient paired sample size (need >= 3 paired Q levels)'
+            return base
+
+        sd = np.std(diffs, ddof=1)
+        if sd < 1e-10:
+            # Zero variance of differences: equivalence holds iff the (constant)
+            # difference is strictly inside the margin.
+            inside = abs(np.mean(diffs)) < delta
+            base.update({
+                'p_lower': 0.0 if inside else 1.0,
+                'p_upper': 0.0 if inside else 1.0,
+                'p_tost': 0.0 if inside else 1.0,
+                'equivalent': bool(inside),
+                'ci90': [float(np.mean(diffs)), float(np.mean(diffs))],
+                'warning': 'zero variance of paired differences',
+            })
+            return base
+
+        se = sd / np.sqrt(n)
+        df = n - 1
+        mean_diff = np.mean(diffs)
+        # H0_lower: diff <= -delta  (one-sided, expect diff > -delta)
+        t_lower = (mean_diff + delta) / se
+        p_lower = stats.t.sf(t_lower, df)   # P(T > t_lower)
+        # H0_upper: diff >= +delta  (one-sided, expect diff < +delta)
+        t_upper = (mean_diff - delta) / se
+        p_upper = stats.t.cdf(t_upper, df)  # P(T < t_upper)
+        p_tost = max(p_lower, p_upper)
+
+        # 90% CI of the mean difference (matches the alpha=0.05 TOST procedure).
+        tcrit = stats.t.ppf(1 - self.alpha, df)
+        ci90 = [float(mean_diff - tcrit * se), float(mean_diff + tcrit * se)]
+
+        base.update({
+            'p_lower': float(p_lower),
+            'p_upper': float(p_upper),
+            'p_tost': float(p_tost),
+            'equivalent': bool(p_tost < self.alpha),
+            'ci90': ci90,
         })
         return base
 
@@ -766,6 +864,26 @@ def analyze_format_comparison(
             'significant': significant
         }
 
+    # ------------------------------------------------------------------ #
+    # Equivalence tests (TOST). A non-significant Friedman/pairwise result only
+    # means "no evidence of a difference"; TOST establishes positive practical
+    # equivalence within a margin. Margin Delta is a methodological choice (see
+    # KWESTIE-DO-KONSULTACJI.md pkt 7) - reported at two values as a sensitivity
+    # analysis. Marked 'significant' / authoritative results are the corrected
+    # ones; TOST is auxiliary supporting evidence.
+    # ------------------------------------------------------------------ #
+    results['tost'] = {}
+    for delta in TOST_DELTAS:
+        delta_key = f"{delta:.3f}"
+        results['tost'][delta_key] = []
+        for i, fmt1 in enumerate(formats):
+            for fmt2 in formats[i + 1:]:
+                vec1 = paired_matrix[fmt1].to_numpy(dtype=float)
+                vec2 = paired_matrix[fmt2].to_numpy(dtype=float)
+                results['tost'][delta_key].append(
+                    analyzer.paired_tost(vec1, vec2, delta, fmt1, fmt2)
+                )
+
     return results
 
 
@@ -787,10 +905,20 @@ def generate_statistical_report(
     lines.append("=" * 80)
     lines.append("STATISTICAL ANALYSIS REPORT")
     lines.append("=" * 80)
+    metric = results.get('metric', 'N/A')
+    is_primary = metric in PRIMARY_METRICS
     lines.append(f"\nAnalysis Date: {results.get('analysis_date', 'N/A')}")
     lines.append(f"Experiment Type: {results.get('experiment_type', 'N/A').upper()}")
-    lines.append(f"Metric Analyzed: {results.get('metric', 'N/A')}")
+    lines.append(
+        f"Metric Analyzed: {metric}  "
+        f"[{'PRIMARY (threshold-free, leading)' if is_primary else 'SECONDARY (fixed-0.5 threshold, interpret with caution)'}]"
+    )
     lines.append(f"Significance Level (alpha): {results.get('alpha', 0.05)}")
+    lines.append(
+        "NOTE: significance is judged on Holm-corrected p-values; the per-pair "
+        "'Significant' flags below are UNCORRECTED. Q=100 is included but is "
+        "outside the matched-CR regime (KWESTIE pkt 4)."
+    )
 
     lines.append(
         "\nDesign: PAIRED / BLOCKED - quality levels are blocks shared by every "
@@ -862,7 +990,7 @@ def generate_statistical_report(
             lines.append(f"  Mean difference: {test['mean_diff']:.4f}")
             lines.append(f"  t-statistic: {test['t_statistic']:.4f}")
             lines.append(f"  p-value: {test['p_value']:.6f}")
-            lines.append(f"  Significant: {'YES' if test['significant'] else 'NO'}")
+            lines.append(f"  Significant (uncorrected): {'YES' if test['significant'] else 'NO'}")
             lines.append(
                 f"  Paired Cohen's d: {test['cohens_d']:.4f} "
                 f"({test['effect_interpretation']})"
@@ -880,7 +1008,7 @@ def generate_statistical_report(
             lines.append(f"  N pairs: {test['n_pairs']}")
             lines.append(f"  Statistic: {test['statistic']:.4f}")
             lines.append(f"  p-value: {test['p_value']:.6f}")
-            lines.append(f"  Significant: {'YES' if test['significant'] else 'NO'}")
+            lines.append(f"  Significant (uncorrected): {'YES' if test['significant'] else 'NO'}")
             if 'warning' in test:
                 lines.append(f"  WARNING: {test['warning']}")
 
@@ -904,6 +1032,28 @@ def generate_statistical_report(
         lines.append(f"Adjusted p-values: {[f'{p:.6f}' for p in holm['adjusted_p_values']]}")
         lines.append(f"Significant after correction: {holm['significant']}")
 
+    # TOST equivalence tests
+    if results.get('tost'):
+        lines.append("\n" + "-" * 40)
+        lines.append("EQUIVALENCE TESTS (TOST, paired)")
+        lines.append("-" * 40)
+        lines.append(
+            "Equivalent => true mean difference lies within +/-Delta. Delta is a "
+            "methodological choice (KWESTIE pkt 7); shown for two margins."
+        )
+        for delta_key in sorted(results['tost'].keys()):
+            lines.append(f"\nDelta = +/-{delta_key} ({float(delta_key) * 100:.1f} pp):")
+            for t in results['tost'][delta_key]:
+                verdict = 'EQUIVALENT' if t.get('equivalent') else 'not shown'
+                ci = t.get('ci90', [float('nan'), float('nan')])
+                lines.append(
+                    f"  {t['comparison']}: TOST p={t['p_tost']:.4f} -> {verdict} "
+                    f"(mean diff {t['mean_diff']:+.4f}, 90% CI "
+                    f"[{ci[0]:+.4f}, {ci[1]:+.4f}])"
+                )
+                if 'warning' in t:
+                    lines.append(f"    WARNING: {t['warning']}")
+
     # Summary
     lines.append("\n" + "=" * 80)
     lines.append("SUMMARY")
@@ -913,10 +1063,15 @@ def generate_statistical_report(
     friedman_sig = friedman.get('significant', False)
     friedman_ran = 'warning' not in friedman and results.get('friedman') is not None
 
+    # Did any pairwise comparison survive Holm correction? (post-hoc truth)
+    def _any_holm_sig(key):
+        block = results.get(key) or {}
+        return any(block.get('significant', []))
+    holm_t_sig = _any_holm_sig('holm_bonferroni_paired_t')
+    holm_w_sig = _any_holm_sig('holm_bonferroni_wilcoxon')
+
     if not friedman_ran:
-        lines.append(
-            "\nFriedman omnibus test was not run (see warnings above)."
-        )
+        lines.append("\nFriedman omnibus test was not run (see warnings above).")
     elif friedman_sig:
         lines.append(
             "\nFriedman test detected significant differences between formats "
@@ -926,6 +1081,36 @@ def generate_statistical_report(
         lines.append(
             "\nFriedman test did not detect significant differences between "
             "formats."
+        )
+
+    # Reconcile omnibus with post-hoc so the summary never contradicts the
+    # Holm-corrected pairwise results shown above.
+    if holm_t_sig or holm_w_sig:
+        which = []
+        if holm_t_sig:
+            which.append("paired t-test")
+        if holm_w_sig:
+            which.append("Wilcoxon")
+        note = (
+            f"NOTE: at least one pairwise comparison is significant after "
+            f"Holm correction ({', '.join(which)})."
+        )
+        if not friedman_sig:
+            note += (
+                " The omnibus Friedman test is NOT significant, so this post-hoc "
+                "result is not protected by the omnibus and should be treated as "
+                "exploratory."
+            )
+        lines.append(note)
+    else:
+        lines.append(
+            "No pairwise comparison is significant after Holm correction."
+        )
+
+    if not is_primary:
+        lines.append(
+            "CAUTION: this is a SECONDARY metric (fixed-0.5 threshold, sub-optimal "
+            "under pos_weight) - the leading conclusion rests on mAP."
         )
 
     lines.append("\n" + "=" * 80)
@@ -939,6 +1124,173 @@ def generate_statistical_report(
             f.write(report)
         print(f"Report saved to: {output_path}")
 
+    return report
+
+
+def load_quality_per_condition(task: str, split: str = "train") -> Optional[pd.DataFrame]:
+    """
+    Mean PSNR/SSIM/CR per (format, quality) from the image-quality CSVs.
+
+    The model is trained on compressed train+val images; quality is essentially
+    split-independent per (format, Q), so the train split (the bulk of the
+    training signal) is used. Returns None if the quality CSVs are absent.
+    """
+    metrics_dir = config.RESULTS_ROOT / "metrics"
+    frames = []
+    for fmt in config.COMPRESSION_FORMATS:
+        p = metrics_dir / f"quality_{task}_{split}_{fmt}.csv"
+        if p.exists():
+            frames.append(pd.read_csv(p))
+    if not frames:
+        return None
+    q = pd.concat(frames, ignore_index=True)
+    return q.groupby(['format', 'quality']).agg(
+        psnr=('psnr', 'mean'),
+        ssim=('ssim', 'mean'),
+        cr=('compression_ratio', 'mean'),
+    ).reset_index()
+
+
+def analyze_quality_vs_performance(
+    perf_df: pd.DataFrame,
+    task: str,
+    metric_column: str = "test_map",
+) -> Dict:
+    """
+    Correlate a classification metric with perceptual image quality.
+
+    Tests whether perceptual fidelity (PSNR / SSIM) or compression ratio (CR)
+    predicts classification performance across the format x quality grid
+    (KWESTIE pkt 8). Reports Spearman (primary, monotonic) and Pearson, both
+    per-format (n=13) and pooled (n=39), on the full Q range and the matched-CR
+    range Q=10-95 (pkt 4).
+
+    IMPORTANT caveat (recorded in the output): the pooled n=39 points are NOT
+    independent - the 13 Q levels are shared across formats and each cell is a
+    single training seed (n=1). Pooled p-values are therefore optimistic and
+    must be read as descriptive, not confirmatory.
+    """
+    result = {
+        'metric': metric_column,
+        'available': False,
+        'note': (
+            'Spearman is primary. Pooled n=39 is pseudoreplicated (shared Q grid, '
+            'n=1 per cell) - p-values descriptive only.'
+        ),
+        'per_format': {},
+        'pooled': {},
+        'warnings': [],
+    }
+
+    quality = load_quality_per_condition(task)
+    if quality is None:
+        result['warnings'].append('No image-quality CSVs found - correlation skipped.')
+        return result
+
+    perf = perf_df[['format', 'train_quality', metric_column]].dropna()
+    merged = perf.merge(
+        quality, left_on=['format', 'train_quality'],
+        right_on=['format', 'quality'], how='inner'
+    )
+    if merged.empty:
+        result['warnings'].append('No overlap between performance and quality grids.')
+        return result
+
+    result['available'] = True
+
+    def _corr(sub):
+        out = {}
+        for qmetric in ['psnr', 'ssim', 'cr']:
+            if len(sub) >= 3 and sub[qmetric].std(ddof=1) > 1e-12 \
+                    and sub[metric_column].std(ddof=1) > 1e-12:
+                sr, sp = stats.spearmanr(sub[metric_column], sub[qmetric])
+                pr, pp = stats.pearsonr(sub[metric_column], sub[qmetric])
+                out[qmetric] = {
+                    'n': int(len(sub)),
+                    'spearman_rho': float(sr), 'spearman_p': float(sp),
+                    'pearson_r': float(pr), 'pearson_p': float(pp),
+                }
+            else:
+                out[qmetric] = {'n': int(len(sub)), 'spearman_rho': float('nan'),
+                                'spearman_p': float('nan'), 'pearson_r': float('nan'),
+                                'pearson_p': float('nan')}
+        return out
+
+    for rng_name, sub_all in [('Q10-100', merged), ('Q10-95', merged[merged['train_quality'] < 100])]:
+        result['pooled'][rng_name] = _corr(sub_all)
+        result['per_format'][rng_name] = {
+            fmt: _corr(sub_all[sub_all['format'] == fmt])
+            for fmt in config.COMPRESSION_FORMATS
+            if (sub_all['format'] == fmt).any()
+        }
+
+    return result
+
+
+def generate_quality_correlation_report(
+    qcorr: Dict,
+    model_name: str,
+    output_path: Optional[Path] = None,
+) -> str:
+    """Human-readable report for the mAP <-> quality correlation analysis."""
+    lines = []
+    lines.append("=" * 80)
+    lines.append("QUALITY-VS-PERFORMANCE CORRELATION (mAP <-> PSNR / SSIM / CR)")
+    lines.append("=" * 80)
+    lines.append(f"\nModel: {model_name}")
+    lines.append(f"Performance metric: {qcorr.get('metric', 'N/A')}")
+    lines.append(f"NOTE: {qcorr.get('note', '')}")
+
+    if not qcorr.get('available'):
+        for w in qcorr.get('warnings', []):
+            lines.append(f"WARNING: {w}")
+        report = "\n".join(lines)
+        if output_path:
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(report)
+            print(f"Quality-correlation report saved to: {output_path}")
+        return report
+
+    def _fmt_block(block):
+        out = []
+        for qm in ['psnr', 'ssim', 'cr']:
+            c = block[qm]
+            out.append(
+                f"    {qm.upper():5s} (n={c['n']}): Spearman rho={c['spearman_rho']:+.3f} "
+                f"(p={c['spearman_p']:.3f}) | Pearson r={c['pearson_r']:+.3f} "
+                f"(p={c['pearson_p']:.3f})"
+            )
+        return out
+
+    for rng in ['Q10-100', 'Q10-95']:
+        lines.append("\n" + "-" * 40)
+        lines.append(f"RANGE {rng}")
+        lines.append("-" * 40)
+        lines.append("  POOLED (n=39, pseudoreplicated - descriptive):")
+        lines.extend(_fmt_block(qcorr['pooled'][rng]))
+        for fmt, block in qcorr['per_format'][rng].items():
+            lines.append(f"  {fmt.upper()} (per-format, n=13):")
+            lines.extend(_fmt_block(block))
+
+    lines.append("\n" + "=" * 80)
+    lines.append("INTERPRETATION")
+    lines.append("=" * 80)
+    lines.append(
+        "\nIf perceptual fidelity predicted classification performance, the mAP-PSNR "
+        "and mAP-SSIM correlations would be positive and consistent across formats "
+        "and architectures. A correlation that changes sign/significance between "
+        "architectures indicates the format x Q variation is dominated by single-seed "
+        "training noise rather than by image quality (supports KWESTIE pkt 3 & 8)."
+    )
+    lines.append("\n" + "=" * 80)
+
+    report = "\n".join(lines)
+    if output_path:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(report)
+        print(f"Quality-correlation report saved to: {output_path}")
     return report
 
 
@@ -1011,20 +1363,33 @@ def run_full_statistical_analysis(
 
         all_results['metrics'][metric] = results
 
-        # Generate report
+        # Generate report. Filenames carry model_name so runs for different
+        # models do not overwrite each other.
         report = generate_statistical_report(
             results,
-            output_path=output_dir / f"report_{experiment_type}_{metric}.txt"
+            output_path=output_dir / f"report_{experiment_type}_{model_name}_{metric}.txt"
         )
 
         # Save JSON results
-        json_path = output_dir / f"results_{experiment_type}_{metric}.json"
+        json_path = output_dir / f"results_{experiment_type}_{model_name}_{metric}.json"
         with open(json_path, 'w') as f:
             json.dump(results, f, indent=2, default=str)
         print(f"Results saved to: {json_path}")
 
+    # Quality-vs-performance correlation (mAP <-> PSNR/SSIM/CR), KWESTIE pkt 8.
+    # Computed on the leading metric (mAP) when available.
+    qmetric = 'test_map' if 'test_map' in df.columns else (metrics[0] if metrics else None)
+    if qmetric:
+        print(f"\nAnalyzing quality-vs-performance correlation ({qmetric})...")
+        qcorr = analyze_quality_vs_performance(df, task, metric_column=qmetric)
+        all_results['quality_correlation'] = qcorr
+        generate_quality_correlation_report(
+            qcorr, model_name,
+            output_path=output_dir / f"quality_correlation_{experiment_type}_{model_name}.txt"
+        )
+
     # Save combined results
-    combined_path = output_dir / f"combined_analysis_{experiment_type}.json"
+    combined_path = output_dir / f"combined_analysis_{experiment_type}_{model_name}.json"
     with open(combined_path, 'w') as f:
         json.dump(all_results, f, indent=2, default=str)
     print(f"\nCombined results saved to: {combined_path}")

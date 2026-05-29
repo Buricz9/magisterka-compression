@@ -1,8 +1,15 @@
 # Wymagane pakiety dla projektu magisterskiego (ARCADE multi-label compression)
-# Wersje GPU torch/torchvision (CUDA 11.8) — dostosuj do swojej karty (cpu/cu121/itp.)
+#
+# UWAGA: torch/torchvision z obsługą CUDA instaluj OSOBNO z indeksu PyTorcha
+# (NIE z PyPI) — PRZED `pip install -r requirements.txt`. Wybierz build CUDA
+# pod swoją kartę:
+#   - Blackwell (RTX 50xx, np. 5060 Ti): cu128
+#       pip install torch==2.7.1+cu128 torchvision==0.22.1+cu128 --index-url https://download.pytorch.org/whl/cu128
+#   - starsze karty (RTX 30xx/40xx): cu121 lub cu118
+#   - brak GPU NVIDIA: cpu  (--index-url https://download.pytorch.org/whl/cpu)
 
-torch==2.7.1+cu118
-torchvision==0.22.1+cu118
+torch==2.7.1
+torchvision==0.22.1
 timm==1.0.20
 
 numpy==2.2.6

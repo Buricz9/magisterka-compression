@@ -1,0 +1,2 @@
+format,train_quality,test_map,test_f1_macro,test_hamming_accuracy,test_f1_micro,test_subset_accuracy
+baseline,baseline,0.6217748329126784,0.6283056283658027,0.9,0.7839643652561247,0.1033333333333333

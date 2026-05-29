@@ -1,0 +1,55 @@
+================================================================================
+QUALITY-VS-PERFORMANCE CORRELATION (mAP <-> PSNR / SSIM / CR)
+================================================================================
+
+Model: efficientnet_b0
+Performance metric: test_map
+NOTE: Spearman is primary. Pooled n=39 is pseudoreplicated (shared Q grid, n=1 per cell) - p-values descriptive only.
+
+----------------------------------------
+RANGE Q10-100
+----------------------------------------
+  POOLED (n=39, pseudoreplicated - descriptive):
+    PSNR  (n=39): Spearman rho=-0.158 (p=0.338) | Pearson r=-0.283 (p=0.081)
+    SSIM  (n=39): Spearman rho=-0.148 (p=0.370) | Pearson r=-0.045 (p=0.784)
+    CR    (n=39): Spearman rho=+0.188 (p=0.251) | Pearson r=-0.016 (p=0.922)
+  JPEG (per-format, n=13):
+    PSNR  (n=13): Spearman rho=-0.280 (p=0.354) | Pearson r=-0.459 (p=0.114)
+    SSIM  (n=13): Spearman rho=-0.280 (p=0.354) | Pearson r=-0.220 (p=0.471)
+    CR    (n=13): Spearman rho=+0.280 (p=0.354) | Pearson r=+0.091 (p=0.767)
+  JPEG2000 (per-format, n=13):
+    PSNR  (n=13): Spearman rho=-0.143 (p=0.642) | Pearson r=-0.366 (p=0.219)
+    SSIM  (n=13): Spearman rho=-0.143 (p=0.642) | Pearson r=-0.199 (p=0.514)
+    CR    (n=13): Spearman rho=+0.143 (p=0.642) | Pearson r=+0.100 (p=0.744)
+  AVIF (per-format, n=13):
+    PSNR  (n=13): Spearman rho=-0.049 (p=0.873) | Pearson r=-0.031 (p=0.921)
+    SSIM  (n=13): Spearman rho=-0.049 (p=0.873) | Pearson r=+0.214 (p=0.483)
+    CR    (n=13): Spearman rho=+0.049 (p=0.873) | Pearson r=-0.383 (p=0.197)
+
+----------------------------------------
+RANGE Q10-95
+----------------------------------------
+  POOLED (n=39, pseudoreplicated - descriptive):
+    PSNR  (n=36): Spearman rho=+0.011 (p=0.950) | Pearson r=+0.119 (p=0.488)
+    SSIM  (n=36): Spearman rho=+0.024 (p=0.891) | Pearson r=+0.144 (p=0.402)
+    CR    (n=36): Spearman rho=+0.024 (p=0.889) | Pearson r=-0.155 (p=0.368)
+  JPEG (per-format, n=13):
+    PSNR  (n=12): Spearman rho=-0.119 (p=0.713) | Pearson r=-0.107 (p=0.741)
+    SSIM  (n=12): Spearman rho=-0.119 (p=0.713) | Pearson r=-0.021 (p=0.947)
+    CR    (n=12): Spearman rho=+0.119 (p=0.713) | Pearson r=-0.051 (p=0.875)
+  JPEG2000 (per-format, n=13):
+    PSNR  (n=12): Spearman rho=+0.063 (p=0.846) | Pearson r=+0.038 (p=0.906)
+    SSIM  (n=12): Spearman rho=+0.063 (p=0.846) | Pearson r=+0.017 (p=0.959)
+    CR    (n=12): Spearman rho=-0.063 (p=0.846) | Pearson r=-0.050 (p=0.878)
+  AVIF (per-format, n=13):
+    PSNR  (n=12): Spearman rho=+0.077 (p=0.812) | Pearson r=+0.264 (p=0.407)
+    SSIM  (n=12): Spearman rho=+0.077 (p=0.812) | Pearson r=+0.369 (p=0.238)
+    CR    (n=12): Spearman rho=-0.077 (p=0.812) | Pearson r=-0.500 (p=0.098)
+
+================================================================================
+INTERPRETATION
+================================================================================
+
+If perceptual fidelity predicted classification performance, the mAP-PSNR and mAP-SSIM correlations would be positive and consistent across formats and architectures. A correlation that changes sign/significance between architectures indicates the format x Q variation is dominated by single-seed training noise rather than by image quality (supports KWESTIE pkt 3 & 8).
+
+================================================================================

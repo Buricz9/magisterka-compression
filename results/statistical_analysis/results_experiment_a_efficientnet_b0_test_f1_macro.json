@@ -1,0 +1,270 @@
+{
+  "metric": "test_f1_macro",
+  "experiment_type": "experiment_a",
+  "analysis_date": "2026-05-29T16:27:34.022335",
+  "alpha": 0.05,
+  "design": "paired_blocked (blocks = quality levels, treatments = formats)",
+  "descriptive_stats": {
+    "jpeg": {
+      "n": 13,
+      "mean": 0.618092446084255,
+      "std": 0.023603094349345016,
+      "median": 0.6231053542572225,
+      "min": 0.5468893657247108,
+      "max": 0.638650807165349
+    },
+    "jpeg2000": {
+      "n": 13,
+      "mean": 0.6264493858566536,
+      "std": 0.0064159825038035915,
+      "median": 0.6277509747741573,
+      "min": 0.6109453806147109,
+      "max": 0.6360968363931047
+    },
+    "avif": {
+      "n": 13,
+      "mean": 0.6316435343440148,
+      "std": 0.007486492454540452,
+      "median": 0.6294942267482648,
+      "min": 0.6204970673999002,
+      "max": 0.6427724916314572
+    }
+  },
+  "paired_quality_levels": [
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    75,
+    80,
+    85,
+    90,
+    95,
+    100
+  ],
+  "n_paired_blocks": 13,
+  "friedman": {
+    "test": "friedman",
+    "metric": "test_f1_macro",
+    "groups": [
+      "jpeg",
+      "jpeg2000",
+      "avif"
+    ],
+    "n_formats": 3,
+    "n_blocks": 13,
+    "chi2_statistic": 7.538461538461547,
+    "p_value": 0.023069802465486414,
+    "significant": true,
+    "kendalls_w": 0.2899408284023672,
+    "w_interpretation": "small"
+  },
+  "paired_t_tests": [
+    {
+      "test": "paired_t_test",
+      "comparison": "jpeg vs jpeg2000",
+      "format1": "jpeg",
+      "format2": "jpeg2000",
+      "mean_diff": -0.008356939772398512,
+      "t_statistic": -1.2779784355589816,
+      "p_value": 0.22542511506274357,
+      "significant": false,
+      "cohens_d": -0.35444744448808924,
+      "effect_interpretation": "small",
+      "n_pairs": 13
+    },
+    {
+      "test": "paired_t_test",
+      "comparison": "jpeg vs avif",
+      "format1": "jpeg",
+      "format2": "avif",
+      "mean_diff": -0.013551088259759857,
+      "t_statistic": -2.2141269790670126,
+      "p_value": 0.0469312159834551,
+      "significant": true,
+      "cohens_d": -0.6140883348780228,
+      "effect_interpretation": "medium",
+      "n_pairs": 13
+    },
+    {
+      "test": "paired_t_test",
+      "comparison": "jpeg2000 vs avif",
+      "format1": "jpeg2000",
+      "format2": "avif",
+      "mean_diff": -0.005194148487361345,
+      "t_statistic": -1.7242854001079801,
+      "p_value": 0.1102954446777894,
+      "significant": false,
+      "cohens_d": -0.4782307248940972,
+      "effect_interpretation": "small",
+      "n_pairs": 13
+    }
+  ],
+  "wilcoxon_tests": [
+    {
+      "test": "wilcoxon_signed_rank",
+      "comparison": "jpeg vs jpeg2000",
+      "format1": "jpeg",
+      "format2": "jpeg2000",
+      "statistic": 31.0,
+      "p_value": 0.339599609375,
+      "significant": false,
+      "n_pairs": 13
+    },
+    {
+      "test": "wilcoxon_signed_rank",
+      "comparison": "jpeg vs avif",
+      "format1": "jpeg",
+      "format2": "avif",
+      "statistic": 10.0,
+      "p_value": 0.010498046875,
+      "significant": true,
+      "n_pairs": 13
+    },
+    {
+      "test": "wilcoxon_signed_rank",
+      "comparison": "jpeg2000 vs avif",
+      "format1": "jpeg2000",
+      "format2": "avif",
+      "statistic": 20.0,
+      "p_value": 0.080322265625,
+      "significant": false,
+      "n_pairs": 13
+    }
+  ],
+  "holm_bonferroni_paired_t": {
+    "original_p_values": [
+      0.22542511506274357,
+      0.0469312159834551,
+      0.1102954446777894
+    ],
+    "adjusted_p_values": [
+      0.22542511506274357,
+      0.1407936479503653,
+      0.2205908893555788
+    ],
+    "significant": [
+      false,
+      false,
+      false
+    ]
+  },
+  "holm_bonferroni_wilcoxon": {
+    "original_p_values": [
+      0.339599609375,
+      0.010498046875,
+      0.080322265625
+    ],
+    "adjusted_p_values": [
+      0.339599609375,
+      0.031494140625,
+      0.16064453125
+    ],
+    "significant": [
+      false,
+      true,
+      false
+    ]
+  },
+  "baseline_reference": 0.6283056283658027,
+  "warnings": [],
+  "tost": {
+    "0.010": [
+      {
+        "test": "paired_tost",
+        "comparison": "jpeg vs jpeg2000",
+        "delta": 0.01,
+        "mean_diff": -0.008356939772398512,
+        "p_lower": 0.4029306681265455,
+        "p_upper": 0.00791540874525593,
+        "p_tost": 0.4029306681265455,
+        "equivalent": false,
+        "ci90": [
+          -0.020011651108071883,
+          0.0032977715632748587
+        ],
+        "n_pairs": 13
+      },
+      {
+        "test": "paired_tost",
+        "comparison": "jpeg vs avif",
+        "delta": 0.01,
+        "mean_diff": -0.013551088259759857,
+        "p_lower": 0.7137484801959424,
+        "p_upper": 0.0011591997255136965,
+        "p_tost": 0.7137484801959424,
+        "equivalent": false,
+        "ci90": [
+          -0.024459196150234386,
+          -0.0026429803692853276
+        ],
+        "n_pairs": 13
+      },
+      {
+        "test": "paired_tost",
+        "comparison": "jpeg2000 vs avif",
+        "delta": 0.01,
+        "mean_diff": -0.005194148487361345,
+        "p_lower": 0.06830516472293337,
+        "p_upper": 0.00014370092333616688,
+        "p_tost": 0.06830516472293337,
+        "equivalent": false,
+        "ci90": [
+          -0.010563019679240773,
+          0.00017472270451808318
+        ],
+        "n_pairs": 13
+      }
+    ],
+    "0.015": [
+      {
+        "test": "paired_tost",
+        "comparison": "jpeg vs jpeg2000",
+        "delta": 0.015,
+        "mean_diff": -0.008356939772398512,
+        "p_lower": 0.16486488055161774,
+        "p_upper": 0.0019196896900575216,
+        "p_tost": 0.16486488055161774,
+        "equivalent": false,
+        "ci90": [
+          -0.020011651108071883,
+          0.0032977715632748587
+        ],
+        "n_pairs": 13
+      },
+      {
+        "test": "paired_tost",
+        "comparison": "jpeg vs avif",
+        "delta": 0.015,
+        "mean_diff": -0.013551088259759857,
+        "p_lower": 0.40842604023016044,
+        "p_upper": 0.0002730872111041957,
+        "p_tost": 0.40842604023016044,
+        "equivalent": false,
+        "ci90": [
+          -0.024459196150234386,
+          -0.0026429803692853276
+        ],
+        "n_pairs": 13
+      },
+      {
+        "test": "paired_tost",
+        "comparison": "jpeg2000 vs avif",
+        "delta": 0.015,
+        "mean_diff": -0.005194148487361345,
+        "p_lower": 0.003444723742196366,
+        "p_upper": 1.092070841383043e-05,
+        "p_tost": 0.003444723742196366,
+        "equivalent": true,
+        "ci90": [
+          -0.010563019679240773,
+          0.00017472270451808318
+        ],
+        "n_pairs": 13
+      }
+    ]
+  }
+}

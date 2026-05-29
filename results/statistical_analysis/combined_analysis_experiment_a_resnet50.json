@@ -1,0 +1,1021 @@
+{
+  "experiment_type": "experiment_a",
+  "model": "resnet50",
+  "task": "syntax",
+  "analysis_date": "2026-05-29T16:27:30.687821",
+  "baseline_reference": {
+    "test_map": 0.6545928915570901,
+    "test_f1_macro": 0.6783290176352402,
+    "test_hamming_accuracy": 0.8867948717948718
+  },
+  "metrics": {
+    "test_map": {
+      "metric": "test_map",
+      "experiment_type": "experiment_a",
+      "analysis_date": "2026-05-29T16:27:30.687821",
+      "alpha": 0.05,
+      "design": "paired_blocked (blocks = quality levels, treatments = formats)",
+      "descriptive_stats": {
+        "jpeg": {
+          "n": 13,
+          "mean": 0.648448888615743,
+          "std": 0.006985515243260938,
+          "median": 0.6495929033321916,
+          "min": 0.6398380392468354,
+          "max": 0.6660489398977386
+        },
+        "jpeg2000": {
+          "n": 13,
+          "mean": 0.6479888261839644,
+          "std": 0.010749463000426882,
+          "median": 0.6490259756832399,
+          "min": 0.6276088434566519,
+          "max": 0.6645738163197336
+        },
+        "avif": {
+          "n": 13,
+          "mean": 0.652770021132888,
+          "std": 0.006717378301231126,
+          "median": 0.6541474098518343,
+          "min": 0.6410573855532444,
+          "max": 0.6624290675197616
+        }
+      },
+      "paired_quality_levels": [
+        10,
+        20,
+        30,
+        40,
+        50,
+        60,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100
+      ],
+      "n_paired_blocks": 13,
+      "friedman": {
+        "test": "friedman",
+        "metric": "test_map",
+        "groups": [
+          "jpeg",
+          "jpeg2000",
+          "avif"
+        ],
+        "n_formats": 3,
+        "n_blocks": 13,
+        "chi2_statistic": 2.0,
+        "p_value": 0.36787944117144245,
+        "significant": false,
+        "kendalls_w": 0.07692307692307693,
+        "w_interpretation": "negligible"
+      },
+      "paired_t_tests": [
+        {
+          "test": "paired_t_test",
+          "comparison": "jpeg vs jpeg2000",
+          "format1": "jpeg",
+          "format2": "jpeg2000",
+          "mean_diff": 0.00046006243177878836,
+          "t_statistic": 0.10634343148567023,
+          "p_value": 0.9170669745456359,
+          "significant": false,
+          "cohens_d": 0.029494361156182747,
+          "effect_interpretation": "negligible",
+          "n_pairs": 13
+        },
+        {
+          "test": "paired_t_test",
+          "comparison": "jpeg vs avif",
+          "format1": "jpeg",
+          "format2": "avif",
+          "mean_diff": -0.0043211325171447984,
+          "t_statistic": -1.8217852846235958,
+          "p_value": 0.09349203786902592,
+          "significant": false,
+          "cohens_d": -0.5052723274304717,
+          "effect_interpretation": "medium",
+          "n_pairs": 13
+        },
+        {
+          "test": "paired_t_test",
+          "comparison": "jpeg2000 vs avif",
+          "format1": "jpeg2000",
+          "format2": "avif",
+          "mean_diff": -0.004781194948923586,
+          "t_statistic": -1.3809343022086114,
+          "p_value": 0.19247547482292943,
+          "significant": false,
+          "cohens_d": -0.3830022642046333,
+          "effect_interpretation": "small",
+          "n_pairs": 13
+        }
+      ],
+      "wilcoxon_tests": [
+        {
+          "test": "wilcoxon_signed_rank",
+          "comparison": "jpeg vs jpeg2000",
+          "format1": "jpeg",
+          "format2": "jpeg2000",
+          "statistic": 41.0,
+          "p_value": 0.786865234375,
+          "significant": false,
+          "n_pairs": 13
+        },
+        {
+          "test": "wilcoxon_signed_rank",
+          "comparison": "jpeg vs avif",
+          "format1": "jpeg",
+          "format2": "avif",
+          "statistic": 23.0,
+          "p_value": 0.127197265625,
+          "significant": false,
+          "n_pairs": 13
+        },
+        {
+          "test": "wilcoxon_signed_rank",
+          "comparison": "jpeg2000 vs avif",
+          "format1": "jpeg2000",
+          "format2": "avif",
+          "statistic": 25.0,
+          "p_value": 0.167724609375,
+          "significant": false,
+          "n_pairs": 13
+        }
+      ],
+      "holm_bonferroni_paired_t": {
+        "original_p_values": [
+          0.9170669745456359,
+          0.09349203786902592,
+          0.19247547482292943
+        ],
+        "adjusted_p_values": [
+          0.9170669745456359,
+          0.28047611360707775,
+          0.38495094964585885
+        ],
+        "significant": [
+          false,
+          false,
+          false
+        ]
+      },
+      "holm_bonferroni_wilcoxon": {
+        "original_p_values": [
+          0.786865234375,
+          0.127197265625,
+          0.167724609375
+        ],
+        "adjusted_p_values": [
+          0.786865234375,
+          0.381591796875,
+          0.381591796875
+        ],
+        "significant": [
+          false,
+          false,
+          false
+        ]
+      },
+      "baseline_reference": 0.6545928915570901,
+      "warnings": [],
+      "tost": {
+        "0.010": [
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs jpeg2000",
+            "delta": 0.01,
+            "mean_diff": 0.00046006243177878836,
+            "p_lower": 0.016222472292407846,
+            "p_upper": 0.02384669546774442,
+            "p_tost": 0.02384669546774442,
+            "equivalent": true,
+            "ci90": [
+              -0.007250461251026338,
+              0.008170586114583916
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs avif",
+            "delta": 0.01,
+            "mean_diff": -0.0043211325171447984,
+            "p_lower": 0.016937330983649062,
+            "p_upper": 2.9336076831679214e-05,
+            "p_tost": 0.016937330983649062,
+            "equivalent": true,
+            "ci90": [
+              -0.008548579503692026,
+              -9.368553059757156e-05
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg2000 vs avif",
+            "delta": 0.01,
+            "mean_diff": -0.004781194948923586,
+            "p_lower": 0.07879649511932256,
+            "p_upper": 0.0005448176477109637,
+            "p_tost": 0.07879649511932256,
+            "equivalent": false,
+            "ci90": [
+              -0.010951991231534739,
+              0.0013896013336875662
+            ],
+            "n_pairs": 13
+          }
+        ],
+        "0.015": [
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs jpeg2000",
+            "delta": 0.015,
+            "mean_diff": 0.00046006243177878836,
+            "p_lower": 0.0019135213375488255,
+            "p_upper": 0.002832341933799505,
+            "p_tost": 0.002832341933799505,
+            "equivalent": true,
+            "ci90": [
+              -0.007250461251026338,
+              0.008170586114583916
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs avif",
+            "delta": 0.015,
+            "mean_diff": -0.0043211325171447984,
+            "p_lower": 0.0003619374637038666,
+            "p_upper": 1.5618903087566558e-06,
+            "p_tost": 0.0003619374637038666,
+            "equivalent": true,
+            "ci90": [
+              -0.008548579503692026,
+              -9.368553059757156e-05
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg2000 vs avif",
+            "delta": 0.015,
+            "mean_diff": -0.004781194948923586,
+            "p_lower": 0.006055678191041752,
+            "p_upper": 4.8535742450539635e-05,
+            "p_tost": 0.006055678191041752,
+            "equivalent": true,
+            "ci90": [
+              -0.010951991231534739,
+              0.0013896013336875662
+            ],
+            "n_pairs": 13
+          }
+        ]
+      }
+    },
+    "test_f1_macro": {
+      "metric": "test_f1_macro",
+      "experiment_type": "experiment_a",
+      "analysis_date": "2026-05-29T16:27:30.697180",
+      "alpha": 0.05,
+      "design": "paired_blocked (blocks = quality levels, treatments = formats)",
+      "descriptive_stats": {
+        "jpeg": {
+          "n": 13,
+          "mean": 0.6688330948679713,
+          "std": 0.004853302390161712,
+          "median": 0.6677281118678481,
+          "min": 0.6614690479871026,
+          "max": 0.6792341182595498
+        },
+        "jpeg2000": {
+          "n": 13,
+          "mean": 0.6726640056385655,
+          "std": 0.007395508480714978,
+          "median": 0.6735245997567846,
+          "min": 0.660682739642845,
+          "max": 0.6845564103696892
+        },
+        "avif": {
+          "n": 13,
+          "mean": 0.6716242553664784,
+          "std": 0.006913241164877651,
+          "median": 0.6720699979215187,
+          "min": 0.6626347231465465,
+          "max": 0.6866542780282731
+        }
+      },
+      "paired_quality_levels": [
+        10,
+        20,
+        30,
+        40,
+        50,
+        60,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100
+      ],
+      "n_paired_blocks": 13,
+      "friedman": {
+        "test": "friedman",
+        "metric": "test_f1_macro",
+        "groups": [
+          "jpeg",
+          "jpeg2000",
+          "avif"
+        ],
+        "n_formats": 3,
+        "n_blocks": 13,
+        "chi2_statistic": 0.4615384615384812,
+        "p_value": 0.7939226578179435,
+        "significant": false,
+        "kendalls_w": 0.017751479289941585,
+        "w_interpretation": "negligible"
+      },
+      "paired_t_tests": [
+        {
+          "test": "paired_t_test",
+          "comparison": "jpeg vs jpeg2000",
+          "format1": "jpeg",
+          "format2": "jpeg2000",
+          "mean_diff": -0.0038309107705943525,
+          "t_statistic": -1.4692154553312717,
+          "p_value": 0.16749744811153902,
+          "significant": false,
+          "cohens_d": -0.4074870506846978,
+          "effect_interpretation": "small",
+          "n_pairs": 13
+        },
+        {
+          "test": "paired_t_test",
+          "comparison": "jpeg vs avif",
+          "format1": "jpeg",
+          "format2": "avif",
+          "mean_diff": -0.0027911604985071817,
+          "t_statistic": -1.1514166424024024,
+          "p_value": 0.2719861894756973,
+          "significant": false,
+          "cohens_d": -0.3193455187388036,
+          "effect_interpretation": "small",
+          "n_pairs": 13
+        },
+        {
+          "test": "paired_t_test",
+          "comparison": "jpeg2000 vs avif",
+          "format1": "jpeg2000",
+          "format2": "avif",
+          "mean_diff": 0.0010397502720871708,
+          "t_statistic": 0.47832128630155396,
+          "p_value": 0.641017780755996,
+          "significant": false,
+          "cohens_d": 0.132662455685088,
+          "effect_interpretation": "negligible",
+          "n_pairs": 13
+        }
+      ],
+      "wilcoxon_tests": [
+        {
+          "test": "wilcoxon_signed_rank",
+          "comparison": "jpeg vs jpeg2000",
+          "format1": "jpeg",
+          "format2": "jpeg2000",
+          "statistic": 28.0,
+          "p_value": 0.243896484375,
+          "significant": false,
+          "n_pairs": 13
+        },
+        {
+          "test": "wilcoxon_signed_rank",
+          "comparison": "jpeg vs avif",
+          "format1": "jpeg",
+          "format2": "avif",
+          "statistic": 33.0,
+          "p_value": 0.414306640625,
+          "significant": false,
+          "n_pairs": 13
+        },
+        {
+          "test": "wilcoxon_signed_rank",
+          "comparison": "jpeg2000 vs avif",
+          "format1": "jpeg2000",
+          "format2": "avif",
+          "statistic": 38.0,
+          "p_value": 0.635498046875,
+          "significant": false,
+          "n_pairs": 13
+        }
+      ],
+      "holm_bonferroni_paired_t": {
+        "original_p_values": [
+          0.16749744811153902,
+          0.2719861894756973,
+          0.641017780755996
+        ],
+        "adjusted_p_values": [
+          0.5024923443346171,
+          0.5439723789513946,
+          0.641017780755996
+        ],
+        "significant": [
+          false,
+          false,
+          false
+        ]
+      },
+      "holm_bonferroni_wilcoxon": {
+        "original_p_values": [
+          0.243896484375,
+          0.414306640625,
+          0.635498046875
+        ],
+        "adjusted_p_values": [
+          0.731689453125,
+          0.82861328125,
+          0.82861328125
+        ],
+        "significant": [
+          false,
+          false,
+          false
+        ]
+      },
+      "baseline_reference": 0.6783290176352402,
+      "warnings": [],
+      "tost": {
+        "0.010": [
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs jpeg2000",
+            "delta": 0.01,
+            "mean_diff": -0.0038309107705943525,
+            "p_lower": 0.01783182235283718,
+            "p_upper": 9.350085490919068e-05,
+            "p_tost": 0.01783182235283718,
+            "equivalent": true,
+            "ci90": [
+              -0.00847814244002513,
+              0.0008163208988364256
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs avif",
+            "delta": 0.01,
+            "mean_diff": -0.0027911604985071817,
+            "p_lower": 0.005809329677900653,
+            "p_upper": 9.783539742588711e-05,
+            "p_tost": 0.005809329677900653,
+            "equivalent": true,
+            "ci90": [
+              -0.007111621432552192,
+              0.0015293004355378288
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg2000 vs avif",
+            "delta": 0.01,
+            "mean_diff": 0.0010397502720871708,
+            "p_lower": 0.00013562588096189347,
+            "p_upper": 0.0007077601439703398,
+            "p_tost": 0.0007077601439703398,
+            "equivalent": true,
+            "ci90": [
+              -0.0028344949768593663,
+              0.004913995521033708
+            ],
+            "n_pairs": 13
+          }
+        ],
+        "0.015": [
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs jpeg2000",
+            "delta": 0.015,
+            "mean_diff": -0.0038309107705943525,
+            "p_lower": 0.0005311857289858902,
+            "p_upper": 5.272104414422609e-06,
+            "p_tost": 0.0005311857289858902,
+            "equivalent": true,
+            "ci90": [
+              -0.00847814244002513,
+              0.0008163208988364256
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs avif",
+            "delta": 0.015,
+            "mean_diff": -0.0027911604985071817,
+            "p_lower": 0.00014551888699121902,
+            "p_upper": 4.4919912585337966e-06,
+            "p_tost": 0.00014551888699121902,
+            "equivalent": true,
+            "ci90": [
+              -0.007111621432552192,
+              0.0015293004355378288
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg2000 vs avif",
+            "delta": 0.015,
+            "mean_diff": 0.0010397502720871708,
+            "p_lower": 4.257300933807912e-06,
+            "p_upper": 1.6463132774202485e-05,
+            "p_tost": 1.6463132774202485e-05,
+            "equivalent": true,
+            "ci90": [
+              -0.0028344949768593663,
+              0.004913995521033708
+            ],
+            "n_pairs": 13
+          }
+        ]
+      }
+    },
+    "test_hamming_accuracy": {
+      "metric": "test_hamming_accuracy",
+      "experiment_type": "experiment_a",
+      "analysis_date": "2026-05-29T16:27:30.700222",
+      "alpha": 0.05,
+      "design": "paired_blocked (blocks = quality levels, treatments = formats)",
+      "descriptive_stats": {
+        "jpeg": {
+          "n": 13,
+          "mean": 0.8772879684418147,
+          "std": 0.00642452389868722,
+          "median": 0.877051282051282,
+          "min": 0.8638461538461538,
+          "max": 0.887948717948718
+        },
+        "jpeg2000": {
+          "n": 13,
+          "mean": 0.8822287968441814,
+          "std": 0.008364592663423017,
+          "median": 0.8841025641025642,
+          "min": 0.8621794871794872,
+          "max": 0.8925641025641026
+        },
+        "avif": {
+          "n": 13,
+          "mean": 0.8821696252465484,
+          "std": 0.004988607868543102,
+          "median": 0.8821794871794871,
+          "min": 0.8707692307692307,
+          "max": 0.8884615384615384
+        }
+      },
+      "paired_quality_levels": [
+        10,
+        20,
+        30,
+        40,
+        50,
+        60,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100
+      ],
+      "n_paired_blocks": 13,
+      "friedman": {
+        "test": "friedman",
+        "metric": "test_hamming_accuracy",
+        "groups": [
+          "jpeg",
+          "jpeg2000",
+          "avif"
+        ],
+        "n_formats": 3,
+        "n_blocks": 13,
+        "chi2_statistic": 4.15384615384616,
+        "p_value": 0.12531520484413683,
+        "significant": false,
+        "kendalls_w": 0.15976331360946772,
+        "w_interpretation": "small"
+      },
+      "paired_t_tests": [
+        {
+          "test": "paired_t_test",
+          "comparison": "jpeg vs jpeg2000",
+          "format1": "jpeg",
+          "format2": "jpeg2000",
+          "mean_diff": -0.00494082840236687,
+          "t_statistic": -1.4567955005841708,
+          "p_value": 0.17083713684707122,
+          "significant": false,
+          "cohens_d": -0.4040423750170352,
+          "effect_interpretation": "small",
+          "n_pairs": 13
+        },
+        {
+          "test": "paired_t_test",
+          "comparison": "jpeg vs avif",
+          "format1": "jpeg",
+          "format2": "avif",
+          "mean_diff": -0.004881656804733727,
+          "t_statistic": -2.779086739680063,
+          "p_value": 0.016678607950256535,
+          "significant": true,
+          "cohens_d": -0.7707799799137316,
+          "effect_interpretation": "medium",
+          "n_pairs": 13
+        },
+        {
+          "test": "paired_t_test",
+          "comparison": "jpeg2000 vs avif",
+          "format1": "jpeg2000",
+          "format2": "avif",
+          "mean_diff": 5.9171597633142715e-05,
+          "t_statistic": 0.024979806033510337,
+          "p_value": 0.9804816643902146,
+          "significant": false,
+          "cohens_d": 0.006928151654228173,
+          "effect_interpretation": "negligible",
+          "n_pairs": 13
+        }
+      ],
+      "wilcoxon_tests": [
+        {
+          "test": "wilcoxon_signed_rank",
+          "comparison": "jpeg vs jpeg2000",
+          "format1": "jpeg",
+          "format2": "jpeg2000",
+          "statistic": 25.0,
+          "p_value": 0.167724609375,
+          "significant": false,
+          "n_pairs": 13
+        },
+        {
+          "test": "wilcoxon_signed_rank",
+          "comparison": "jpeg vs avif",
+          "format1": "jpeg",
+          "format2": "avif",
+          "statistic": 12.0,
+          "p_value": 0.0166015625,
+          "significant": true,
+          "n_pairs": 13
+        },
+        {
+          "test": "wilcoxon_signed_rank",
+          "comparison": "jpeg2000 vs avif",
+          "format1": "jpeg2000",
+          "format2": "avif",
+          "statistic": 37.0,
+          "p_value": 0.57470703125,
+          "significant": false,
+          "n_pairs": 13
+        }
+      ],
+      "holm_bonferroni_paired_t": {
+        "original_p_values": [
+          0.17083713684707122,
+          0.016678607950256535,
+          0.9804816643902146
+        ],
+        "adjusted_p_values": [
+          0.34167427369414244,
+          0.0500358238507696,
+          0.9804816643902146
+        ],
+        "significant": [
+          false,
+          false,
+          false
+        ]
+      },
+      "holm_bonferroni_wilcoxon": {
+        "original_p_values": [
+          0.167724609375,
+          0.0166015625,
+          0.57470703125
+        ],
+        "adjusted_p_values": [
+          0.33544921875,
+          0.0498046875,
+          0.57470703125
+        ],
+        "significant": [
+          false,
+          true,
+          false
+        ]
+      },
+      "baseline_reference": 0.8867948717948718,
+      "warnings": [],
+      "tost": {
+        "0.010": [
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs jpeg2000",
+            "delta": 0.01,
+            "mean_diff": -0.00494082840236687,
+            "p_lower": 0.08079752708510006,
+            "p_upper": 0.00042870918158181116,
+            "p_tost": 0.08079752708510006,
+            "equivalent": false,
+            "ci90": [
+              -0.010985586896338892,
+              0.0011039300916051518
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs avif",
+            "delta": 0.01,
+            "mean_diff": -0.004881656804733727,
+            "p_lower": 0.006494164974074137,
+            "p_upper": 1.0403942970238253e-06,
+            "p_tost": 0.006494164974074137,
+            "equivalent": true,
+            "ci90": [
+              -0.008012367354282315,
+              -0.001750946255185141
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg2000 vs avif",
+            "delta": 0.01,
+            "mean_diff": 5.9171597633142715e-05,
+            "p_lower": 0.0005670916427075668,
+            "p_upper": 0.0006196760136566856,
+            "p_tost": 0.0006196760136566856,
+            "equivalent": true,
+            "ci90": [
+              -0.004162670716432632,
+              0.004281013911698918
+            ],
+            "n_pairs": 13
+          }
+        ],
+        "0.015": [
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs jpeg2000",
+            "delta": 0.015,
+            "mean_diff": -0.00494082840236687,
+            "p_lower": 0.005894998370855843,
+            "p_upper": 3.7433283588064224e-05,
+            "p_tost": 0.005894998370855843,
+            "equivalent": true,
+            "ci90": [
+              -0.010985586896338892,
+              0.0011039300916051518
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs avif",
+            "delta": 0.015,
+            "mean_diff": -0.004881656804733727,
+            "p_lower": 4.5083349705203585e-05,
+            "p_upper": 4.62569999217981e-08,
+            "p_tost": 4.5083349705203585e-05,
+            "equivalent": true,
+            "ci90": [
+              -0.008012367354282315,
+              -0.001750946255185141
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg2000 vs avif",
+            "delta": 0.015,
+            "mean_diff": 5.9171597633142715e-05,
+            "p_lower": 1.812235337416302e-05,
+            "p_upper": 1.9521602622851626e-05,
+            "p_tost": 1.9521602622851626e-05,
+            "equivalent": true,
+            "ci90": [
+              -0.004162670716432632,
+              0.004281013911698918
+            ],
+            "n_pairs": 13
+          }
+        ]
+      }
+    }
+  },
+  "quality_correlation": {
+    "metric": "test_map",
+    "available": true,
+    "note": "Spearman is primary. Pooled n=39 is pseudoreplicated (shared Q grid, n=1 per cell) - p-values descriptive only.",
+    "per_format": {
+      "Q10-100": {
+        "jpeg": {
+          "psnr": {
+            "n": 13,
+            "spearman_rho": 0.2912087912087912,
+            "spearman_p": 0.3343858561975295,
+            "pearson_r": 0.12016416737321307,
+            "pearson_p": 0.6957789838643679
+          },
+          "ssim": {
+            "n": 13,
+            "spearman_rho": 0.2912087912087912,
+            "spearman_p": 0.3343858561975295,
+            "pearson_r": 0.17561761840431583,
+            "pearson_p": 0.5660438680759935
+          },
+          "cr": {
+            "n": 13,
+            "spearman_rho": -0.2912087912087912,
+            "spearman_p": 0.3343858561975295,
+            "pearson_r": -0.15487860847374818,
+            "pearson_p": 0.6134026886621285
+          }
+        },
+        "jpeg2000": {
+          "psnr": {
+            "n": 13,
+            "spearman_rho": 0.6263736263736264,
+            "spearman_p": 0.02198860240988966,
+            "pearson_r": 0.5179474794782847,
+            "pearson_p": 0.06981597323031838
+          },
+          "ssim": {
+            "n": 13,
+            "spearman_rho": 0.6263736263736264,
+            "spearman_p": 0.02198860240988966,
+            "pearson_r": 0.5357313194066308,
+            "pearson_p": 0.059161445890587416
+          },
+          "cr": {
+            "n": 13,
+            "spearman_rho": -0.6263736263736264,
+            "spearman_p": 0.02198860240988966,
+            "pearson_r": -0.49423282416008,
+            "pearson_p": 0.08602339204396707
+          }
+        },
+        "avif": {
+          "psnr": {
+            "n": 13,
+            "spearman_rho": 0.32967032967032966,
+            "spearman_p": 0.27133505450523554,
+            "pearson_r": 0.1864322921266217,
+            "pearson_p": 0.5419635743193347
+          },
+          "ssim": {
+            "n": 13,
+            "spearman_rho": 0.32967032967032966,
+            "spearman_p": 0.27133505450523554,
+            "pearson_r": 0.38287627443613814,
+            "pearson_p": 0.19660966494441465
+          },
+          "cr": {
+            "n": 13,
+            "spearman_rho": -0.32967032967032966,
+            "spearman_p": 0.27133505450523554,
+            "pearson_r": -0.507732688820684,
+            "pearson_p": 0.07650917798988373
+          }
+        }
+      },
+      "Q10-95": {
+        "jpeg": {
+          "psnr": {
+            "n": 12,
+            "spearman_rho": 0.2447552447552448,
+            "spearman_p": 0.4432619364501832,
+            "pearson_r": 0.14601824610916433,
+            "pearson_p": 0.6506797020737558
+          },
+          "ssim": {
+            "n": 12,
+            "spearman_rho": 0.2447552447552448,
+            "spearman_p": 0.4432619364501832,
+            "pearson_r": 0.16467752085939238,
+            "pearson_p": 0.6090393924300439
+          },
+          "cr": {
+            "n": 12,
+            "spearman_rho": -0.2447552447552448,
+            "spearman_p": 0.4432619364501832,
+            "pearson_r": -0.14286161891556518,
+            "pearson_p": 0.6578196760578185
+          }
+        },
+        "jpeg2000": {
+          "psnr": {
+            "n": 12,
+            "spearman_rho": 0.5664335664335665,
+            "spearman_p": 0.05484211977540786,
+            "pearson_r": 0.4054255842759572,
+            "pearson_p": 0.19103838185111627
+          },
+          "ssim": {
+            "n": 12,
+            "spearman_rho": 0.5664335664335665,
+            "spearman_p": 0.05484211977540786,
+            "pearson_r": 0.45319443029012463,
+            "pearson_p": 0.13897936552795465
+          },
+          "cr": {
+            "n": 12,
+            "spearman_rho": -0.5664335664335665,
+            "spearman_p": 0.05484211977540786,
+            "pearson_r": -0.43818580108885247,
+            "pearson_p": 0.15421192128613437
+          }
+        },
+        "avif": {
+          "psnr": {
+            "n": 12,
+            "spearman_rho": 0.34965034965034975,
+            "spearman_p": 0.2652387868927897,
+            "pearson_r": 0.2081919924017645,
+            "pearson_p": 0.5161306261713721
+          },
+          "ssim": {
+            "n": 12,
+            "spearman_rho": 0.34965034965034975,
+            "spearman_p": 0.2652387868927897,
+            "pearson_r": 0.3916921825395687,
+            "pearson_p": 0.20795753069209294
+          },
+          "cr": {
+            "n": 12,
+            "spearman_rho": -0.34965034965034975,
+            "spearman_p": 0.2652387868927897,
+            "pearson_r": -0.5120378807856125,
+            "pearson_p": 0.08877967810078508
+          }
+        }
+      }
+    },
+    "pooled": {
+      "Q10-100": {
+        "psnr": {
+          "n": 39,
+          "spearman_rho": 0.44716599190283407,
+          "spearman_p": 0.0043165001729073066,
+          "pearson_r": 0.2987388124383268,
+          "pearson_p": 0.06469461183587887
+        },
+        "ssim": {
+          "n": 39,
+          "spearman_rho": 0.46356275303643724,
+          "spearman_p": 0.002957050020775615,
+          "pearson_r": 0.3724142607327712,
+          "pearson_p": 0.019556915350403745
+        },
+        "cr": {
+          "n": 39,
+          "spearman_rho": -0.39757085020242916,
+          "spearman_p": 0.012199574393948604,
+          "pearson_r": -0.3774726012558908,
+          "pearson_p": 0.0178359562806148
+        }
+      },
+      "Q10-95": {
+        "psnr": {
+          "n": 36,
+          "spearman_rho": 0.4,
+          "spearman_p": 0.015641324678757014,
+          "pearson_r": 0.29130317763274866,
+          "pearson_p": 0.08475432266763577
+        },
+        "ssim": {
+          "n": 36,
+          "spearman_rho": 0.4195624195624196,
+          "spearman_p": 0.010856245749201212,
+          "pearson_r": 0.33656889814820257,
+          "pearson_p": 0.04473585136353597
+        },
+        "cr": {
+          "n": 36,
+          "spearman_rho": -0.3420849420849421,
+          "spearman_p": 0.04113716898644564,
+          "pearson_r": -0.34988398293348844,
+          "pearson_p": 0.036452263607107405
+        }
+      }
+    },
+    "warnings": []
+  }
+}

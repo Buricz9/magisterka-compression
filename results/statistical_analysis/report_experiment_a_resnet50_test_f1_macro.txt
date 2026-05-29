@@ -1,0 +1,138 @@
+================================================================================
+STATISTICAL ANALYSIS REPORT
+================================================================================
+
+Analysis Date: 2026-05-29T16:27:30.697180
+Experiment Type: EXPERIMENT_A
+Metric Analyzed: test_f1_macro  [SECONDARY (fixed-0.5 threshold, interpret with caution)]
+Significance Level (alpha): 0.05
+NOTE: significance is judged on Holm-corrected p-values; the per-pair 'Significant' flags below are UNCORRECTED. Q=100 is included but is outside the matched-CR regime (KWESTIE pkt 4).
+
+Design: PAIRED / BLOCKED - quality levels are blocks shared by every format.
+Tests: Friedman omnibus (+ Kendall's W), pairwise paired t-test and Wilcoxon signed-rank, Holm-Bonferroni correction.
+Paired quality levels (blocks): 13  [10, 20, 30, 40, 50, 60, 70, 75, 80, 85, 90, 95, 100]
+Baseline (uncompressed reference): test_f1_macro = 0.6783
+
+----------------------------------------
+DESCRIPTIVE STATISTICS (paired data)
+----------------------------------------
+
+JPEG:
+  N = 13
+  Mean = 0.6688
+  Std = 0.0049
+  Median = 0.6677
+  Range = [0.6615, 0.6792]
+
+JPEG2000:
+  N = 13
+  Mean = 0.6727
+  Std = 0.0074
+  Median = 0.6735
+  Range = [0.6607, 0.6846]
+
+AVIF:
+  N = 13
+  Mean = 0.6716
+  Std = 0.0069
+  Median = 0.6721
+  Range = [0.6626, 0.6867]
+
+----------------------------------------
+FRIEDMAN TEST (omnibus, paired/blocked)
+----------------------------------------
+Formats (treatments): 3
+Quality levels (blocks): 13
+Chi-squared statistic: 0.4615
+p-value: 0.793923
+Significant: NO
+Effect size (Kendall's W): 0.0178 (negligible)
+
+----------------------------------------
+PAIRWISE COMPARISONS (paired t-test)
+----------------------------------------
+
+jpeg vs jpeg2000:
+  N pairs: 13
+  Mean difference: -0.0038
+  t-statistic: -1.4692
+  p-value: 0.167497
+  Significant (uncorrected): NO
+  Paired Cohen's d: -0.4075 (small)
+
+jpeg vs avif:
+  N pairs: 13
+  Mean difference: -0.0028
+  t-statistic: -1.1514
+  p-value: 0.271986
+  Significant (uncorrected): NO
+  Paired Cohen's d: -0.3193 (small)
+
+jpeg2000 vs avif:
+  N pairs: 13
+  Mean difference: 0.0010
+  t-statistic: 0.4783
+  p-value: 0.641018
+  Significant (uncorrected): NO
+  Paired Cohen's d: 0.1327 (negligible)
+
+----------------------------------------
+PAIRWISE COMPARISONS (Wilcoxon signed-rank, non-parametric)
+----------------------------------------
+
+jpeg vs jpeg2000:
+  N pairs: 13
+  Statistic: 28.0000
+  p-value: 0.243896
+  Significant (uncorrected): NO
+
+jpeg vs avif:
+  N pairs: 13
+  Statistic: 33.0000
+  p-value: 0.414307
+  Significant (uncorrected): NO
+
+jpeg2000 vs avif:
+  N pairs: 13
+  Statistic: 38.0000
+  p-value: 0.635498
+  Significant (uncorrected): NO
+
+----------------------------------------
+HOLM-BONFERRONI CORRECTION (paired t-test)
+----------------------------------------
+Original p-values: ['0.167497', '0.271986', '0.641018']
+Adjusted p-values: ['0.502492', '0.543972', '0.641018']
+Significant after correction: [False, False, False]
+
+----------------------------------------
+HOLM-BONFERRONI CORRECTION (Wilcoxon signed-rank)
+----------------------------------------
+Original p-values: ['0.243896', '0.414307', '0.635498']
+Adjusted p-values: ['0.731689', '0.828613', '0.828613']
+Significant after correction: [False, False, False]
+
+----------------------------------------
+EQUIVALENCE TESTS (TOST, paired)
+----------------------------------------
+Equivalent => true mean difference lies within +/-Delta. Delta is a methodological choice (KWESTIE pkt 7); shown for two margins.
+
+Delta = +/-0.010 (1.0 pp):
+  jpeg vs jpeg2000: TOST p=0.0178 -> EQUIVALENT (mean diff -0.0038, 90% CI [-0.0085, +0.0008])
+  jpeg vs avif: TOST p=0.0058 -> EQUIVALENT (mean diff -0.0028, 90% CI [-0.0071, +0.0015])
+  jpeg2000 vs avif: TOST p=0.0007 -> EQUIVALENT (mean diff +0.0010, 90% CI [-0.0028, +0.0049])
+
+Delta = +/-0.015 (1.5 pp):
+  jpeg vs jpeg2000: TOST p=0.0005 -> EQUIVALENT (mean diff -0.0038, 90% CI [-0.0085, +0.0008])
+  jpeg vs avif: TOST p=0.0001 -> EQUIVALENT (mean diff -0.0028, 90% CI [-0.0071, +0.0015])
+  jpeg2000 vs avif: TOST p=0.0000 -> EQUIVALENT (mean diff +0.0010, 90% CI [-0.0028, +0.0049])
+
+================================================================================
+SUMMARY
+================================================================================
+
+Friedman test did not detect significant differences between formats.
+No pairwise comparison is significant after Holm correction.
+CAUTION: this is a SECONDARY metric (fixed-0.5 threshold, sub-optimal under pos_weight) - the leading conclusion rests on mAP.
+
+================================================================================

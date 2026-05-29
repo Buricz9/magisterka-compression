@@ -131,7 +131,7 @@ def generate_latex_table_experiment_a(
     latex.append("\\begin{table}[htbp]")
     latex.append("\\centering")
     latex.append(f"\\caption{{Wyniki Eksperymentu A: {model_name.upper()} - {task.upper()}}}")
-    latex.append("\\label{tab:experiment_a}")
+    latex.append(f"\\label{{tab:experiment_a_{model_name}}}")
     # 5 columns: Format, Q, mAP, F1-Macro, Test Acc.
     latex.append("\\begin{tabular}{lcccc}")
     latex.append("\\hline")
@@ -199,7 +199,8 @@ def generate_latex_table_experiment_a(
 
 def generate_comparison_plot(
     results: Dict[str, pd.DataFrame],
-    output_dir: Optional[Path] = None
+    output_dir: Optional[Path] = None,
+    model_name: str = "model"
 ) -> None:
     """
     Generate comparison plots for all experiments.
@@ -207,6 +208,8 @@ def generate_comparison_plot(
     Args:
         results: Dictionary with experiment DataFrames
         output_dir: Directory to save plots
+        model_name: Model name, embedded in the output filename so runs for
+            different models do not overwrite each other.
     """
     if output_dir is None:
         output_dir = config.PLOTS_ROOT
@@ -274,14 +277,16 @@ def generate_comparison_plot(
         plt.suptitle('Eksperyment A: Trening na skompresowanych, test na oryginałach (mAP wiodąca)',
                      fontsize=16, fontweight='bold')
         plt.tight_layout()
-        plt.savefig(output_dir / 'experiment_a_accuracy.png', dpi=300, bbox_inches='tight')
-        print(f"Plot saved: {output_dir / 'experiment_a_accuracy.png'}")
+        out_png = output_dir / f'experiment_a_accuracy_{model_name}.png'
+        plt.savefig(out_png, dpi=300, bbox_inches='tight')
+        print(f"Plot saved: {out_png}")
         plt.close()
 
 
 def generate_summary_tables(
     results: Dict[str, pd.DataFrame],
-    output_dir: Optional[Path] = None
+    output_dir: Optional[Path] = None,
+    model_name: str = "model"
 ) -> None:
     """
     Generate summary CSV tables for data analysis.
@@ -289,6 +294,8 @@ def generate_summary_tables(
     Args:
         results: Dictionary with experiment DataFrames
         output_dir: Directory to save tables
+        model_name: Model name, embedded in the output filenames so runs for
+            different models do not overwrite each other.
     """
     if output_dir is None:
         output_dir = config.RESULTS_ROOT / "tables"
@@ -309,8 +316,9 @@ def generate_summary_tables(
             'f1_mean', 'f1_std',
             'acc_mean', 'acc_std',
         ]
-        summary_a.to_csv(output_dir / 'experiment_a_summary.csv', index=False)
-        print(f"Summary table saved: {output_dir / 'experiment_a_summary.csv'}")
+        out_csv = output_dir / f'experiment_a_summary_{model_name}.csv'
+        summary_a.to_csv(out_csv, index=False)
+        print(f"Summary table saved: {out_csv}")
 
     # Baseline reference summary (uncompressed PNG) — written separately so it
     # never mixes into the per-format aggregation above.
@@ -320,9 +328,9 @@ def generate_summary_tables(
                                      'test_f1_macro', 'test_hamming_accuracy',
                                      'test_f1_micro', 'test_subset_accuracy']
                          if c in baseline_df.columns]
-        baseline_df[baseline_cols].to_csv(
-            output_dir / 'experiment_a_baseline_summary.csv', index=False)
-        print(f"Baseline summary saved: {output_dir / 'experiment_a_baseline_summary.csv'}")
+        out_bcsv = output_dir / f'experiment_a_baseline_summary_{model_name}.csv'
+        baseline_df[baseline_cols].to_csv(out_bcsv, index=False)
+        print(f"Baseline summary saved: {out_bcsv}")
 
 
 
@@ -369,24 +377,27 @@ def main():
 
     output_dir = Path(args.output_dir) if args.output_dir else None
 
-    # Generate LaTeX tables
+    # Generate LaTeX tables. Default to results/tables/ when no --output-dir is
+    # given (matching the summary-table fallback) so the .tex is always written;
+    # filename carries the model name to avoid overwriting between models.
     print("\nGenerating LaTeX tables...")
     if 'arcade_exp_a' in results:
+        tables_dir = (Path(output_dir) / 'tables') if output_dir else (config.RESULTS_ROOT / "tables")
         generate_latex_table_experiment_a(
             results['arcade_exp_a'],
             args.model,
             args.task,
-            output_path=(output_dir / 'tables' / 'experiment_a_table.tex') if output_dir else None,
+            output_path=tables_dir / f'experiment_a_table_{args.model}.tex',
             baseline_df=results.get('arcade_baseline'),
         )
 
     # Generate plots
     print("\nGenerating plots...")
-    generate_comparison_plot(results, output_dir=output_dir)
+    generate_comparison_plot(results, output_dir=output_dir, model_name=args.model)
 
     # Generate summary tables
     print("\nGenerating summary tables...")
-    generate_summary_tables(results, output_dir=output_dir)
+    generate_summary_tables(results, output_dir=output_dir, model_name=args.model)
 
     print("\n" + "=" * 80)
     print("ALL TABLES AND PLOTS GENERATED SUCCESSFULLY!")

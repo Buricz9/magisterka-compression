@@ -7,17 +7,25 @@ Produces publication-ready PDFs in plots/:
   - fig_quality.pdf     : PSNR / SSIM / CR vs Q for the 3 formats
   - fig_map_vs_psnr.pdf : mAP vs mean PSNR scatter (per format), per model
 
+Design choices (so figures match the thesis' "no real effect / noise" message):
+  - Both panels of a metric share the SAME Y axis (and X axis in the scatter),
+    so the two architectures are visually comparable.
+  - Q-vs-metric lines are thin and semi-transparent: the markers carry the data,
+    the connecting line does not dramatise single-seed noise as a trend.
+  - The scatter shows a regression line + Spearman rho, so the (lack of a)
+    quality->performance relationship is visible, not just asserted.
+
 Run: python -m src.analysis.generate_article_figures
 """
 import sys
 from pathlib import Path
-import glob
 
 import numpy as np
 import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from scipy import stats
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -53,23 +61,47 @@ def _baseline(model, col):
     return float(b.iloc[0][col]) if col in b.columns and len(b) else None
 
 
+def _shared_ylim(col):
+    """Common y-range (in %) across both models for a metric, incl. baselines."""
+    vals = []
+    for model, _ in MODELS:
+        for fmt, *_ in FORMATS:
+            d = _load(model, fmt)
+            if d is not None and not d.empty:
+                vals.extend((d[col] * 100).tolist())
+        b = _baseline(model, col)
+        if b is not None:
+            vals.append(b * 100)
+    if not vals:
+        return None
+    lo, hi = min(vals), max(vals)
+    pad = max(0.4, (hi - lo) * 0.06)
+    return lo - pad, hi + pad
+
+
 def _metric_vs_q(col, ylabel, title, out_name):
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
+    ylim = _shared_ylim(col)
     for ax, (model, mlabel) in zip(axes, MODELS):
         for fmt, flabel, color, marker, ls in FORMATS:
             d = _load(model, fmt)
             if d is None or d.empty:
                 continue
-            ax.plot(d["train_quality"], d[col] * 100, marker=marker, color=color,
-                    linestyle=ls, linewidth=1.8, markersize=6, label=flabel)
+            # thin, semi-transparent connector; opaque markers carry the data
+            ax.plot(d["train_quality"], d[col] * 100, linestyle=ls, color=color,
+                    linewidth=1.0, alpha=0.45, zorder=1)
+            ax.plot(d["train_quality"], d[col] * 100, linestyle="none", marker=marker,
+                    color=color, markersize=6, label=flabel, zorder=3)
         b = _baseline(model, col)
         if b is not None:
             ax.axhline(b * 100, color="black", linestyle=":", linewidth=1.4,
-                       label="Baseline (PNG)")
+                       label="Baseline (PNG)", zorder=2)
         ax.set_title(mlabel, fontsize=13, fontweight="bold")
         ax.set_xlabel("Poziom jakości Q", fontsize=11)
         ax.set_ylabel(ylabel, fontsize=11)
         ax.invert_xaxis()  # Q decreases left->right => compression increases right
+        if ylim:
+            ax.set_ylim(*ylim)
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=9, loc="best")
     fig.suptitle(title, fontsize=14, fontweight="bold")
@@ -114,6 +146,10 @@ def quality_figure():
         ax.legend(fontsize=9)
         if col == "cr":
             ax.set_yscale("log")
+            # The three CR curves overlap by design (matched-CR); say so.
+            ax.text(0.5, 0.04, "krzywe pokrywają się\n(dopasowane CR)",
+                    transform=ax.transAxes, ha="center", va="bottom",
+                    fontsize=8, style="italic", color="0.35")
     fig.suptitle("Jakość kompresji w funkcji poziomu Q (dopasowane CR)",
                  fontsize=14, fontweight="bold")
     fig.tight_layout()
@@ -126,33 +162,80 @@ def map_vs_psnr_figure():
     """Scatter: classification mAP vs mean PSNR of the training format/Q."""
     frames = []
     for fmt, *_ in FORMATS:
-        for f in glob.glob(str(config.RESULTS_ROOT / "metrics" / f"quality_syntax_train_{fmt}.csv")):
-            frames.append(pd.read_csv(f))
+        p = config.RESULTS_ROOT / "metrics" / f"quality_syntax_train_{fmt}.csv"
+        if p.exists():
+            frames.append(pd.read_csv(p))
     if not frames:
         print("no train quality CSVs - skipping fig_map_vs_psnr")
         return
     q = pd.concat(frames, ignore_index=True)
     qa = q.groupby(["format", "quality"]).agg(psnr=("psnr", "mean")).reset_index()
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-    for ax, (model, mlabel) in zip(axes, MODELS):
-        for fmt, flabel, color, marker, ls in FORMATS:
+    # Pre-compute merged points per model to derive shared axis ranges.
+    merged_by_model = {}
+    for model, _ in MODELS:
+        rows = []
+        for fmt, *_ in FORMATS:
             d = _load(model, fmt)
             if d is None or d.empty:
                 continue
             m = d.merge(qa[qa["format"] == fmt], left_on="train_quality",
                         right_on="quality", how="inner")
-            ax.scatter(m["psnr"], m["test_map"] * 100, color=color, marker=marker,
-                       s=45, label=flabel, alpha=0.85)
+            m["__fmt"] = fmt
+            rows.append(m)
+        merged_by_model[model] = pd.concat(rows, ignore_index=True) if rows else None
+
+    # Shared X (PSNR) and Y (mAP %) across both panels, incl. baselines.
+    xs, ys = [], []
+    for model, _ in MODELS:
+        mm = merged_by_model[model]
+        if mm is not None and not mm.empty:
+            xs.extend(mm["psnr"].tolist())
+            ys.extend((mm["test_map"] * 100).tolist())
+        b = _baseline(model, "test_map")
+        if b is not None:
+            ys.append(b * 100)
+    xpad = max(0.5, (max(xs) - min(xs)) * 0.05)
+    ypad = max(0.4, (max(ys) - min(ys)) * 0.06)
+    xlim = (min(xs) - xpad, max(xs) + xpad)
+    ylim = (min(ys) - ypad, max(ys) + ypad)
+
+    fmt_meta = {f[0]: (f[1], f[2], f[3]) for f in FORMATS}
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharex=True, sharey=True)
+    for ax, (model, mlabel) in zip(axes, MODELS):
+        mm = merged_by_model[model]
+        if mm is not None and not mm.empty:
+            for fmt, (flabel, color, marker) in fmt_meta.items():
+                sub = mm[mm["__fmt"] == fmt]
+                if sub.empty:
+                    continue
+                ax.scatter(sub["psnr"], sub["test_map"] * 100, color=color,
+                           marker=marker, s=45, label=flabel, alpha=0.7,
+                           edgecolors="white", linewidths=0.5, zorder=3)
+            # regression line + Spearman rho on the pooled points
+            x = mm["psnr"].to_numpy(dtype=float)
+            y = (mm["test_map"] * 100).to_numpy(dtype=float)
+            if len(x) >= 3 and np.std(x) > 1e-9:
+                a, b1 = np.polyfit(x, y, 1)
+                xr = np.linspace(x.min(), x.max(), 50)
+                ax.plot(xr, a * xr + b1, color="0.35", linestyle="-",
+                        linewidth=1.4, zorder=2)
+                rho, pval = stats.spearmanr(x, y)
+                ax.text(0.04, 0.96, f"Spearman $\\rho={rho:+.2f}$ (p={pval:.2f})",
+                        transform=ax.transAxes, ha="left", va="top", fontsize=9,
+                        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="0.7",
+                                  alpha=0.8))
         b = _baseline(model, "test_map")
         if b is not None:
             ax.axhline(b * 100, color="black", linestyle=":", linewidth=1.4,
-                       label="Baseline (PNG)")
+                       label="Baseline (PNG)", zorder=1)
         ax.set_title(mlabel, fontsize=13, fontweight="bold")
         ax.set_xlabel("Średni PSNR danych treningowych [dB]", fontsize=11)
         ax.set_ylabel("mAP testowe [%]", fontsize=11)
+        ax.set_xlim(*xlim)
+        ax.set_ylim(*ylim)
         ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=9)
+        ax.legend(fontsize=9, loc="lower right")
     fig.suptitle("Skuteczność klasyfikacji a wierność percepcyjna danych treningowych",
                  fontsize=14, fontweight="bold")
     fig.tight_layout()

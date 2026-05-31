@@ -60,6 +60,14 @@ desktop.ini
 *.bak
 *.log
 
+# LaTeX build artifacts (regenerowane przez pdflatex)
+*.aux
+*.lof
+*.lot
+*.out
+*.toc
+*.synctex.gz
+
 # Claude Code agents
 .claude/agents/
 

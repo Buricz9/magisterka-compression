@@ -63,10 +63,13 @@ DEFAULT_METRICS = ['test_map', 'test_f1_macro', 'test_hamming_accuracy']
 # pos_weight up to ~999 - interpret with caution; see KWESTIE pkt 2).
 PRIMARY_METRICS = {'test_map'}
 
-# Equivalence margins (Delta) for the TOST equivalence test, on the metric scale
-# (0.01 = 1 pp, 0.015 = 1.5 pp). The final Delta is a methodological decision for
-# the supervisor (KWESTIE pkt 7); both are reported as a sensitivity analysis.
-TOST_DELTAS = [0.01, 0.015]
+# Equivalence margins (Delta) for the TOST equivalence test, on the metric scale.
+# Primary margin: Delta = 0.02 mAP (~2x the single-seed training-noise floor,
+# sigma ~ 0.007-0.012; a <=2 pp mAP difference is below what the n=1 setup can
+# attribute to format rather than seed, and is practically negligible for
+# decision-support). 0.01 and 0.015 are reported as a sensitivity ladder.
+TOST_DELTAS = [0.01, 0.015, 0.02]
+TOST_PRIMARY_DELTA = 0.02
 
 
 class StatisticalAnalyzer:
@@ -1038,8 +1041,9 @@ def generate_statistical_report(
         lines.append("EQUIVALENCE TESTS (TOST, paired)")
         lines.append("-" * 40)
         lines.append(
-            "Equivalent => true mean difference lies within +/-Delta. Delta is a "
-            "methodological choice (KWESTIE pkt 7); shown for two margins."
+            "Equivalent => true mean difference lies within +/-Delta. Primary "
+            "margin Delta=0.02 (~2x single-seed noise floor); 0.01 / 0.015 shown "
+            "as a sensitivity ladder."
         )
         for delta_key in sorted(results['tost'].keys()):
             lines.append(f"\nDelta = +/-{delta_key} ({float(delta_key) * 100:.1f} pp):")

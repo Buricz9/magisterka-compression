@@ -1,7 +1,7 @@
 {
   "metric": "test_f1_macro",
   "experiment_type": "experiment_a",
-  "analysis_date": "2026-05-29T16:27:34.022335",
+  "analysis_date": "2026-05-31T21:18:30.196307",
   "alpha": 0.05,
   "design": "paired_blocked (blocks = quality levels, treatments = formats)",
   "descriptive_stats": {
@@ -258,6 +258,53 @@
         "p_lower": 0.003444723742196366,
         "p_upper": 1.092070841383043e-05,
         "p_tost": 0.003444723742196366,
+        "equivalent": true,
+        "ci90": [
+          -0.010563019679240773,
+          0.00017472270451808318
+        ],
+        "n_pairs": 13
+      }
+    ],
+    "0.020": [
+      {
+        "test": "paired_tost",
+        "comparison": "jpeg vs jpeg2000",
+        "delta": 0.02,
+        "mean_diff": -0.008356939772398512,
+        "p_lower": 0.05015148172872578,
+        "p_upper": 0.00048381392558777237,
+        "p_tost": 0.05015148172872578,
+        "equivalent": false,
+        "ci90": [
+          -0.020011651108071883,
+          0.0032977715632748587
+        ],
+        "n_pairs": 13
+      },
+      {
+        "test": "paired_tost",
+        "comparison": "jpeg vs avif",
+        "delta": 0.02,
+        "mean_diff": -0.013551088259759857,
+        "p_lower": 0.15638869525306728,
+        "p_upper": 7.013181239418137e-05,
+        "p_tost": 0.15638869525306728,
+        "equivalent": false,
+        "ci90": [
+          -0.024459196150234386,
+          -0.0026429803692853276
+        ],
+        "n_pairs": 13
+      },
+      {
+        "test": "paired_tost",
+        "comparison": "jpeg2000 vs avif",
+        "delta": 0.02,
+        "mean_diff": -0.005194148487361345,
+        "p_lower": 0.0001783837517795436,
+        "p_upper": 1.189216440681819e-06,
+        "p_tost": 0.0001783837517795436,
         "equivalent": true,
         "ci90": [
           -0.010563019679240773,

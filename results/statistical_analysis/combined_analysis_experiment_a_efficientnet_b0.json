@@ -2,7 +2,7 @@
   "experiment_type": "experiment_a",
   "model": "efficientnet_b0",
   "task": "syntax",
-  "analysis_date": "2026-05-29T16:27:34.011739",
+  "analysis_date": "2026-05-31T21:18:30.182043",
   "baseline_reference": {
     "test_map": 0.6217748329126784,
     "test_f1_macro": 0.6283056283658027,
@@ -12,7 +12,7 @@
     "test_map": {
       "metric": "test_map",
       "experiment_type": "experiment_a",
-      "analysis_date": "2026-05-29T16:27:34.011739",
+      "analysis_date": "2026-05-31T21:18:30.182043",
       "alpha": 0.05,
       "design": "paired_blocked (blocks = quality levels, treatments = formats)",
       "descriptive_stats": {
@@ -276,13 +276,60 @@
             ],
             "n_pairs": 13
           }
+        ],
+        "0.020": [
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs jpeg2000",
+            "delta": 0.02,
+            "mean_diff": -0.003600538091841414,
+            "p_lower": 0.00014220559343702834,
+            "p_upper": 4.951236633891515e-06,
+            "p_tost": 0.00014220559343702834,
+            "equivalent": true,
+            "ci90": [
+              -0.009388112320135995,
+              0.0021870361364531654
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs avif",
+            "delta": 0.02,
+            "mean_diff": -0.00645548617535755,
+            "p_lower": 0.00019198320317669556,
+            "p_upper": 3.054974459571769e-07,
+            "p_tost": 0.00019198320317669556,
+            "equivalent": true,
+            "ci90": [
+              -0.011410827406533257,
+              -0.001500144944181844
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg2000 vs avif",
+            "delta": 0.02,
+            "mean_diff": -0.0028549480835161367,
+            "p_lower": 1.785197964271289e-06,
+            "p_upper": 8.421298684960821e-08,
+            "p_tost": 1.785197964271289e-06,
+            "equivalent": true,
+            "ci90": [
+              -0.006655392553429036,
+              0.0009454963863967623
+            ],
+            "n_pairs": 13
+          }
         ]
       }
     },
     "test_f1_macro": {
       "metric": "test_f1_macro",
       "experiment_type": "experiment_a",
-      "analysis_date": "2026-05-29T16:27:34.022335",
+      "analysis_date": "2026-05-31T21:18:30.196307",
       "alpha": 0.05,
       "design": "paired_blocked (blocks = quality levels, treatments = formats)",
       "descriptive_stats": {
@@ -546,13 +593,60 @@
             ],
             "n_pairs": 13
           }
+        ],
+        "0.020": [
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs jpeg2000",
+            "delta": 0.02,
+            "mean_diff": -0.008356939772398512,
+            "p_lower": 0.05015148172872578,
+            "p_upper": 0.00048381392558777237,
+            "p_tost": 0.05015148172872578,
+            "equivalent": false,
+            "ci90": [
+              -0.020011651108071883,
+              0.0032977715632748587
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs avif",
+            "delta": 0.02,
+            "mean_diff": -0.013551088259759857,
+            "p_lower": 0.15638869525306728,
+            "p_upper": 7.013181239418137e-05,
+            "p_tost": 0.15638869525306728,
+            "equivalent": false,
+            "ci90": [
+              -0.024459196150234386,
+              -0.0026429803692853276
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg2000 vs avif",
+            "delta": 0.02,
+            "mean_diff": -0.005194148487361345,
+            "p_lower": 0.0001783837517795436,
+            "p_upper": 1.189216440681819e-06,
+            "p_tost": 0.0001783837517795436,
+            "equivalent": true,
+            "ci90": [
+              -0.010563019679240773,
+              0.00017472270451808318
+            ],
+            "n_pairs": 13
+          }
         ]
       }
     },
     "test_hamming_accuracy": {
       "metric": "test_hamming_accuracy",
       "experiment_type": "experiment_a",
-      "analysis_date": "2026-05-29T16:27:34.030353",
+      "analysis_date": "2026-05-31T21:18:30.204305",
       "alpha": 0.05,
       "design": "paired_blocked (blocks = quality levels, treatments = formats)",
       "descriptive_stats": {
@@ -809,6 +903,53 @@
             "p_lower": 0.014798392654113783,
             "p_upper": 0.0007279590367263616,
             "p_tost": 0.014798392654113783,
+            "equivalent": true,
+            "ci90": [
+              -0.011870560228826639,
+              0.004395215061173801
+            ],
+            "n_pairs": 13
+          }
+        ],
+        "0.020": [
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs jpeg2000",
+            "delta": 0.02,
+            "mean_diff": -0.0021203155818540617,
+            "p_lower": 0.003418670561036682,
+            "p_upper": 0.0008310927751291323,
+            "p_tost": 0.003418670561036682,
+            "equivalent": true,
+            "ci90": [
+              -0.011897449288305873,
+              0.007656818124597749
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg vs avif",
+            "delta": 0.02,
+            "mean_diff": -0.0058579881656804795,
+            "p_lower": 0.004215984311603743,
+            "p_upper": 4.560597475772188e-05,
+            "p_tost": 0.004215984311603743,
+            "equivalent": true,
+            "ci90": [
+              -0.013868912607547256,
+              0.002152936276186297
+            ],
+            "n_pairs": 13
+          },
+          {
+            "test": "paired_tost",
+            "comparison": "jpeg2000 vs avif",
+            "delta": 0.02,
+            "mean_diff": -0.0037376725838264182,
+            "p_lower": 0.0019481967919765357,
+            "p_upper": 0.00011058361113747402,
+            "p_tost": 0.0019481967919765357,
             "equivalent": true,
             "ci90": [
               -0.011870560228826639,

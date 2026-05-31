@@ -2,7 +2,7 @@
 STATISTICAL ANALYSIS REPORT
 ================================================================================
 
-Analysis Date: 2026-05-29T16:27:30.697180
+Analysis Date: 2026-05-31T21:18:26.895086
 Experiment Type: EXPERIMENT_A
 Metric Analyzed: test_f1_macro  [SECONDARY (fixed-0.5 threshold, interpret with caution)]
 Significance Level (alpha): 0.05
@@ -115,7 +115,7 @@ Significant after correction: [False, False, False]
 ----------------------------------------
 EQUIVALENCE TESTS (TOST, paired)
 ----------------------------------------
-Equivalent => true mean difference lies within +/-Delta. Delta is a methodological choice (KWESTIE pkt 7); shown for two margins.
+Equivalent => true mean difference lies within +/-Delta. Primary margin Delta=0.02 (~2x single-seed noise floor); 0.01 / 0.015 shown as a sensitivity ladder.
 
 Delta = +/-0.010 (1.0 pp):
   jpeg vs jpeg2000: TOST p=0.0178 -> EQUIVALENT (mean diff -0.0038, 90% CI [-0.0085, +0.0008])
@@ -125,6 +125,11 @@ Delta = +/-0.010 (1.0 pp):
 Delta = +/-0.015 (1.5 pp):
   jpeg vs jpeg2000: TOST p=0.0005 -> EQUIVALENT (mean diff -0.0038, 90% CI [-0.0085, +0.0008])
   jpeg vs avif: TOST p=0.0001 -> EQUIVALENT (mean diff -0.0028, 90% CI [-0.0071, +0.0015])
+  jpeg2000 vs avif: TOST p=0.0000 -> EQUIVALENT (mean diff +0.0010, 90% CI [-0.0028, +0.0049])
+
+Delta = +/-0.020 (2.0 pp):
+  jpeg vs jpeg2000: TOST p=0.0000 -> EQUIVALENT (mean diff -0.0038, 90% CI [-0.0085, +0.0008])
+  jpeg vs avif: TOST p=0.0000 -> EQUIVALENT (mean diff -0.0028, 90% CI [-0.0071, +0.0015])
   jpeg2000 vs avif: TOST p=0.0000 -> EQUIVALENT (mean diff +0.0010, 90% CI [-0.0028, +0.0049])
 
 ================================================================================

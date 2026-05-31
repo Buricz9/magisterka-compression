@@ -14,6 +14,22 @@ uzupełniany na bieżąco — kolejne tematy dopisywane są na końcu.
 dane i kod są poprawne. Są to wybory metodologiczne i sposoby prezentacji
 wyników, które warto uzgodnić, aby praca była spójna i odporna na uwagi.
 
+**Aktualizacja (2026-05-29): decyzje podjęte.** Wszystkie 9 punktów zostało
+rozstrzygniętych (sekcje **DECYZJA** poniżej) i wcielonych w kod oraz artykuł.
+Skrót decyzji:
+
+| # | Kwestia | Decyzja |
+|---|---------|---------|
+| 1 | Schemat testów | **Przyjęto** sparowany/blokowy (Friedman + paired t/Wilcoxon + Holm) |
+| 2 | Metryka wiodąca | **Przyjęto** mAP; bez strojenia progu; F1/Hamming pomocnicze |
+| 3 | n=1 vs replikacja | **Przyjęto n=1** z uczciwym ujęciem („brak dowodu na efekt" + TOST); replikacja = praca przyszła |
+| 4 | Q=100 poza matched-CR | **Przyjęto**: porównanie formatów na Q=10–95, Q=100 informacyjnie |
+| 5 | Ogon JPEG2000 | Mediana potwierdza ranking; zdanie-caveat w tekście (pełne IQR zbędne) |
+| 6 | Klasy puste/rzadkie | **Przyjęto** maskowanie klas zerowych; opis jako ograniczenie zbioru |
+| 7 | Granica Δ dla TOST | **Δ = 0.02 mAP** główne (≈2× szum), sensitivity 0.01/0.015; zakres Q=10–95 |
+| 8 | PSNR/SSIM a skuteczność | Test korelacji **dodany**; teza dopuszczalna jako wynik (2 architektury) z caveatem n=1 |
+| 9 | Tendencja AVIF | Raportować jako „możliwa drobna, nieistotna tendencja, nieodróżnialna od szumu" |
+
 ---
 
 ## 1. Zmiana metodyki analizy statystycznej (testy sparowane zamiast niesparowanych)
@@ -36,6 +52,12 @@ jako próbie IID są dyskusyjne".)
 artykułu? Alternatywa prostsza: rezygnacja z testów istotności i raportowanie
 wyłącznie statystyk opisowych (średnia ± odchylenie standardowe po Q).
 
+**DECYZJA (przyjęta).** Schemat sparowany/blokowy jest jedynym poprawnym dla tej
+konstrukcji (poziomy Q wspólne dla formatów). Przyjmujemy go jako docelowy:
+Friedman + Kendall's W (omnibus), sparowany t-test i Wilcoxon (pary),
+Holm-Bonferroni (korekta). Statystyki opisowe raportujemy dodatkowo, nie zamiast
+testów. *Zaimplementowane i wykonane.*
+
 ---
 
 ## 2. Metryka wiodąca: mAP zamiast F1
@@ -54,6 +76,13 @@ metryki pomocnicze.
 Alternatywa: dobór progu decyzyjnego per klasa na zbiorze walidacyjnym —
 poprawiłby wiarygodność F1, ale wymaga dodatkowej procedury i jest sam w sobie
 dyskusyjny przy bardzo małych zbiorach walidacyjnych dla klas rzadkich.
+
+**DECYZJA (przyjęta).** mAP jako metryka wiodąca — bezprogowa, standardowa dla
+multi-label przy silnym imbalansie. **Strojenia progu per klasa NIE wprowadzamy**:
+przy klasach skrajnie rzadkich (id=12: 6 próbek walidacyjnych) kalibracja progu
+jest niewiarygodna i dokłada wątpliwy stopień swobody. F1\@0.5 i Hamming
+raportujemy jako pomocnicze, jawnie oznaczone jako progowe. *Wcielone (raporty
+oznaczają metrykę PRIMARY/SECONDARY).*
 
 ---
 
@@ -104,6 +133,18 @@ losowych na warunek (np. 3–5), aby oszacować zmienność wewnątrz-warunkową
 odzyskać moc do wykrycia efektu rzędu 1–2 pp? Wariant z replikacją istotnie
 zwiększa wiarygodność, ale mnoży czas obliczeń ~3–5×.
 
+**DECYZJA (przyjęta).** Dla pracy magisterskiej przyjmujemy **schemat n=1** z
+uczciwym ujęciem. Uzasadnienie: (a) wynik główny to *równoważność/null* — jest on
+mocniejszy poznawczo, gdy dowód „braku efektu" oparty jest na TOST, a nie na
+brakującej mocy; (b) zbieżne dowody (baseline wewnątrz rozrzutu, zmiana znaku
+korelacji między architekturami) jednoznacznie wskazują, że ewentualny efekt
+< szum ziarna; (c) replikacja 3–5× to dni obliczeń, które nie zmieniłyby wniosku
+jakościowego. Wnioski formułujemy jako **„brak dowodu na efekt"** + równoważność
+TOST, a n=1 opisujemy jako kluczowe ograniczenie. Replikacja wieloziarnowa =
+rekomendowana **praca przyszła** (jedyny sposób rozstrzygnięcia tendencji AVIF
+~0.5 pp — pkt 9). Determinizmu treningu świadomie nie zmieniamy w trakcie badania
+(spójność wszystkich przebiegów). *Wcielone w sekcję Ograniczenia.*
+
 ---
 
 ## 4. Punkt Q=100 poza reżimem dopasowanej kompresji (matched-CR)
@@ -123,6 +164,13 @@ raportować jedynie informacyjnie, z wyraźną adnotacją „poza reżimem match
 
 **Pytanie do promotora.** Czy akceptuje Pani takie ujęcie?
 
+**DECYZJA (przyjęta).** Tak. Główne porównanie formatów odnosimy do reżimu
+matched-CR (Q=10–95); Q=100 pokazujemy informacyjnie z adnotacją. Zweryfikowano,
+że wykluczenie Q=100 **nie zmienia wniosku**: Friedman dla mAP daje p=0.37
+(ResNet-50) i p=0.34 (EfficientNet-B0) na Q=10–95, a równoważność TOST przy
+Δ=0.015/0.02 utrzymuje się dla wszystkich par. *Wcielone w tekst (adnotacja
++ nota o odporności wniosku).*
+
 ---
 
 ## 5. JPEG2000 — ogon trudnych obrazów w metrykach jakości
@@ -139,6 +187,13 @@ zachowanie formatu.
 **Pytanie do promotora.** Czy taki sposób raportowania jest odpowiedni?
 (To kwestia wyłącznie prezentacji — dane są poprawne.)
 
+**DECYZJA (przyjęta, w wersji minimalnej).** Ogon dotyczy ~2% obrazów i **nie
+zmienia uporządkowania formatów** (AVIF ≳ JPEG2000 > JPEG zachodzi zarówno na
+średnich, jak i medianach PSNR/SSIM). Dlatego w~tabelach pozostawiamy średnie
+(spójne z literaturą kodeków), a~ogon JPEG2000 odnotowujemy jednym zdaniem-caveat
+w~omówieniu jakości. Pełne tabele mediana+IQR uznajemy za zbędne dla wniosków.
+*Caveat dodany w~sekcji „Jakość kompresji".*
+
 ---
 
 ## 6. Klasy puste i skrajnie rzadkie w zbiorze ARCADE
@@ -154,6 +209,12 @@ pozytywnych** w danym splicie; raportowana jest liczba faktycznie obecnych klas
 
 **Pytanie do promotora.** Czy akceptuje Pani takie podejście (pominięcie klas
 zerowych) oraz opis tego jako ograniczenia zbioru danych?
+
+**DECYZJA (przyjęta).** Tak. Maskowanie klas bez przykładów pozytywnych w~danym
+splicie (z~raportowaniem `n_classes_present`) jest standardowym, poprawnym
+podejściem — F1/AP są dla takich klas nieokreślone i~ich wymuszanie zaniżałoby
+metryki sztucznie. Opisujemy to jako ograniczenie **zbioru danych** (a~nie metody)
+w~sekcji Ograniczenia. *Wcielone.*
 
 ---
 
@@ -178,6 +239,18 @@ matched-CR — por. pkt 4 — więc porównanie formatów uczciwie liczyć na Q=
 jakiej podstawie (literatura / wymaganie kliniczne / arbitralny próg z
 uzasadnieniem)? Czy porównanie formatów raportować na zakresie Q=10–95
 (z wyłączeniem niedopasowanego pod względem CR punktu Q=100)?
+
+**DECYZJA (przyjęta).** Przyjmujemy **Δ = 0.02 mAP (2 pp)** jako główną granicę
+równoważności, z~uzasadnieniem zdefiniowanym *a priori* (niezależnym od wyniku
+porównania): jest to ≈2× próg szumu pojedynczego ziarna (σ ≈ 0.007–0.012 mAP) —
+czyli najmniejsza różnica, którą układ n=1 mógłby w~ogóle przypisać formatowi, a~nie
+losowości treningu — oraz próg praktycznie nieistotny w~kontekście wspomagania
+decyzji/triażu. Dla przejrzystości raportujemy **drabinę czułości** Δ ∈ {0.01,
+0.015, 0.02}. Wynik: przy Δ=0.015 i~0.02 **wszystkie pary formatów są równoważne
+w~obu architekturach i~w~obu zakresach Q** (przy Δ=0.01 — 2/3 par, bo para z~AVIF
+ma tendencję ~0.5 pp). Porównanie raportujemy na **Q=10–95** (matched-CR);
+zweryfikowano odporność na wykluczenie Q=100. *Wcielone: `TOST_PRIMARY_DELTA=0.02`,
+raporty regenerowane.*
 
 ---
 
@@ -205,6 +278,16 @@ percepcyjnymi") i ograniczone do ResNet-50.
 Q)? Czy tezę o (nie)adekwatności metryk percepcyjnych jako proxy skuteczności
 klasyfikacyjnej formułować dopiero po ukończeniu EfficientNet-B0 — i jak mocno
 (hipotetycznie czy jako wniosek)?
+
+**DECYZJA (przyjęta).** Formalny test korelacji mAP↔PSNR/SSIM/CR **dodany** do
+potoku (Spearman + Pearson, per format i~łącznie, Q=10–95 i~Q=10–100, z~notą o~
+pseudoreplikacji). Mając komplet **dwóch architektur**, tezę formułujemy jako
+**wynik o~umiarkowanej sile** (nie tylko hipotezę): „przy dopasowanym CR wierność
+percepcyjna nie jest predyktorem skuteczności klasyfikacji w~tym zadaniu" —
+poparte (a) brakiem istotnej różnicy formatów mimo dużych różnic PSNR/SSIM oraz
+(b) zmianą znaku korelacji mAP↔PSNR między architekturami (ResNet +0.45 vs
+EffNet −0.16). Zachowujemy caveat n=1 (korelacje łączone opisowe). *Wcielone w~
+podrozdział „Analiza statystyczna" i~„Porównanie formatów".*
 
 ---
 
@@ -238,6 +321,15 @@ advantage, indistinguishable from noise", czy całkowicie pominąć? Czy rozstrz
 ją replikacją wieloziarnową (por. pkt 3) — efekt ~0.5 pp jest jedynym
 potencjalnym sygnałem w całym eksperymencie, ale jego potwierdzenie wymaga 3–5
 ziaren na warunek (koszt ~3–5× czasu obliczeń).
+
+**DECYZJA (przyjęta).** Raportujemy tendencję AVIF **uczciwie, jako możliwą drobną
+i~nieistotną statystycznie tendencję** (najwyższa średnia mAP w~obu
+architekturach, ale po korekcie Holm p ≥ 0.12, niespójna między metrykami,
+nieodróżnialna od szumu ziarna). **Nie** twierdzimy, że „AVIF jest lepszy". Nie
+pomijamy jej (jest jedynym kierunkowo spójnym sygnałem i~warto ją odnotować jako
+hipotezę do dalszej weryfikacji). Rozstrzygnięcie odkładamy do replikacji
+wieloziarnowej jako pracy przyszłej (pkt 3). *Wcielone — patrz pkt analizy
+wyników i~wnioski (H2).*
 
 ---
 

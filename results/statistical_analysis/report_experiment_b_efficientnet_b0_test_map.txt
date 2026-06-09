@@ -1,0 +1,42 @@
+================================================================================
+EXPERIMENT B — STATISTICAL ANALYSIS (train on PNG, test on compressed)
+================================================================================
+
+Model: efficientnet_b0   Task: syntax   rows: 39
+
+NOTE: the model is fixed (PNG-trained baseline); only the test set varies.
+Therefore any monotone degradation here is a deterministic effect of
+test-time compression, NOT single-seed training noise.
+Baseline (test on PNG) test_map = 0.6218
+
+----------------------------------------
+PER-FORMAT CORRELATION OF test_map WITH TEST-Q
+(positive rho => metric falls as compression rises => compression hurts)
+----------------------------------------
+
+JPEG:
+  Q=100 -> Q=10: 0.6206 -> 0.5114 (drop +0.1092)
+  Spearman rho=+0.725 (p=0.005) | Pearson r=+0.606 (p=0.028)
+  mean=0.6115  vs baseline gap=-0.0103
+
+JPEG2000:
+  Q=100 -> Q=10: 0.6224 -> 0.6063 (drop +0.0161)
+  Spearman rho=+0.516 (p=0.071) | Pearson r=+0.789 (p=0.001)
+  mean=0.6196  vs baseline gap=-0.0021
+
+AVIF:
+  Q=100 -> Q=10: 0.6248 -> 0.6049 (drop +0.0199)
+  Spearman rho=+0.467 (p=0.108) | Pearson r=+0.634 (p=0.020)
+  mean=0.6215  vs baseline gap=-0.0003
+
+----------------------------------------
+FRIEDMAN ACROSS FORMATS (test_map; blocks = Q levels)
+----------------------------------------
+chi2=3.846  p=0.1462  Kendall W=0.148  significant: NO
+
+================================================================================
+SUMMARY
+================================================================================
+Test-time compression significantly degrades ['JPEG'] (Spearman p<0.05). This is a deterministic effect (fixed model),
+in contrast to the flat result of Experiment A.
+================================================================================

@@ -244,6 +244,71 @@ def map_vs_psnr_figure():
     print(f"saved: {PLOTS / 'fig_map_vs_psnr.pdf'}")
 
 
+def _load_b(model):
+    """Experiment B results (train on PNG, test on compressed): all formats."""
+    p = config.RESULTS_ROOT / "experiment_b" / f"{model}_arcade_syntax_results.csv"
+    if not p.exists():
+        return None
+    d = pd.read_csv(p)
+    d["test_quality"] = pd.to_numeric(d["test_quality"], errors="coerce")
+    return d
+
+
+def exp_b_figure(col="test_map", ylabel="mAP [%]", out_name="fig_exp_b_map.pdf"):
+    """Experiment B: metric vs TEST compression level Q, per model.
+
+    Mirror of fig_exp_a_*: same baseline (PNG test) reference line, but here the
+    x-axis is the quality of the COMPRESSED TEST set; the model is the fixed
+    PNG-trained baseline. A drop towards low Q means the model is hurt by
+    test-time compression (the effect absent in Experiment A).
+    """
+    # shared y-range across both models (incl. baseline) for comparability
+    vals = []
+    for model, _ in MODELS:
+        d = _load_b(model)
+        if d is not None and not d.empty:
+            vals.extend((d[col] * 100).tolist())
+        b = _baseline(model, col)
+        if b is not None:
+            vals.append(b * 100)
+    if not vals:
+        print("no experiment_b CSVs - skipping fig_exp_b")
+        return
+    lo, hi = min(vals), max(vals)
+    pad = max(0.4, (hi - lo) * 0.06)
+    ylim = (lo - pad, hi + pad)
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
+    for ax, (model, mlabel) in zip(axes, MODELS):
+        d = _load_b(model)
+        if d is not None and not d.empty:
+            for fmt, flabel, color, marker, ls in FORMATS:
+                s = d[d["format"] == fmt].sort_values("test_quality")
+                if s.empty:
+                    continue
+                ax.plot(s["test_quality"], s[col] * 100, linestyle=ls, color=color,
+                        linewidth=1.0, alpha=0.45, zorder=1)
+                ax.plot(s["test_quality"], s[col] * 100, linestyle="none",
+                        marker=marker, color=color, markersize=6, label=flabel, zorder=3)
+        b = _baseline(model, col)
+        if b is not None:
+            ax.axhline(b * 100, color="black", linestyle=":", linewidth=1.4,
+                       label="Baseline (test PNG)", zorder=2)
+        ax.set_title(mlabel, fontsize=13, fontweight="bold")
+        ax.set_xlabel("Poziom kompresji zbioru testowego Q", fontsize=11)
+        ax.set_ylabel(ylabel, fontsize=11)
+        ax.invert_xaxis()
+        ax.set_ylim(*ylim)
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=9, loc="best")
+    fig.suptitle("Eksperyment B: mAP w funkcji kompresji zbioru testowego "
+                 "(model trenowany na PNG)", fontsize=14, fontweight="bold")
+    fig.tight_layout()
+    fig.savefig(PLOTS / out_name, bbox_inches="tight")
+    plt.close(fig)
+    print(f"saved: {PLOTS / out_name}")
+
+
 def main():
     _metric_vs_q("test_map", "mAP [%]",
                  "Eksperyment A: mAP w funkcji poziomu kompresji Q", "fig_exp_a_map.pdf")
@@ -251,6 +316,7 @@ def main():
                  "Eksperyment A: F1-macro w funkcji poziomu kompresji Q", "fig_exp_a_f1.pdf")
     quality_figure()
     map_vs_psnr_figure()
+    exp_b_figure()
 
 
 if __name__ == "__main__":

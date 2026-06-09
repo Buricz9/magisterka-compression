@@ -37,7 +37,7 @@
 
 Obrazowanie medyczne stanowi fundament współczesnej diagnostyki kardiologicznej. Wraz ze wzrostem liczby wykonywanych badań oraz rozdzielczości obrazów rośnie zapotrzebowanie na efektywne metody przechowywania i~przesyłania danych. Kompresja obrazu jest powszechnie stosowanym rozwiązaniem tego problemu, a~jej wpływ na jakość obrazu medycznego oraz na skuteczność algorytmów analizy obrazu był przedmiotem licznych badań~\mycite{11, 12}. Wpływ kompresji na skuteczność automatycznych systemów diagnostycznych opartych na głębokim uczeniu pozostaje jednak niedostatecznie zbadany, w~szczególności dla nowszych formatów oraz w~zadaniu klasyfikacji segmentów tętnic wieńcowych~\mycite{11}.
 
-W~niniejszej pracy zbadano wpływ trzech formatów kompresji -- JPEG, JPEG2000 oraz AVIF -- na skuteczność dwóch architektur głębokiego uczenia (ResNet-50 i~EfficientNet-B0) w~zadaniu klasyfikacji segmentów tętnic wieńcowych w~obrazach angiografii rentgenowskiej. Każdy obraz angiograficzny zawiera kilka segmentów naczyniowych z~różnych klas, dlatego problem sformułowano jako klasyfikację wieloetykietową (\textit{multi-label}). Przeprowadzono Eksperyment~A: trening modeli na danych skompresowanych z~ewaluacją na oryginałach, dodatkowo zbudowano model bazowy (\textit{baseline}) trenowany na oryginalnych obrazach PNG jako górny punkt odniesienia. Aby zapewnić uczciwe porównanie formatów, zastosowano metodologię \textit{matched compression ratio} -- dla każdego obrazu poziom kompresji JPEG2000 i~AVIF dobierany jest tak, aby uzyskać identyczny rozmiar pliku jak JPEG przy zadanym parametrze jakości~$Q$. Badania wykonano na zbiorze danych ARCADE zawierającym 1500 obrazów opatrzonych adnotacjami eksperckimi dla zadania klasyfikacji według schematu SYNTAX Score.
+W~niniejszej pracy zbadano wpływ trzech formatów kompresji -- JPEG, JPEG2000 oraz AVIF -- na skuteczność dwóch architektur głębokiego uczenia (ResNet-50 i~EfficientNet-B0) w~zadaniu klasyfikacji segmentów tętnic wieńcowych w~obrazach angiografii rentgenowskiej. Każdy obraz angiograficzny zawiera kilka segmentów naczyniowych z~różnych klas, dlatego problem sformułowano jako klasyfikację wieloetykietową (\textit{multi-label}). Przeprowadzono dwa komplementarne eksperymenty: Eksperyment~A (trening na danych skompresowanych, ewaluacja na oryginałach) oraz Eksperyment~B (trening na oryginałach, ewaluacja na danych skompresowanych); dodatkowo zbudowano model bazowy (\textit{baseline}) trenowany i~testowany na oryginalnych obrazach PNG jako górny punkt odniesienia. Aby zapewnić uczciwe porównanie formatów, zastosowano metodologię \textit{matched compression ratio} -- dla każdego obrazu poziom kompresji JPEG2000 i~AVIF dobierany jest tak, aby uzyskać identyczny rozmiar pliku jak JPEG przy zadanym parametrze jakości~$Q$. Badania wykonano na zbiorze danych ARCADE zawierającym 1500 obrazów opatrzonych adnotacjami eksperckimi dla zadania klasyfikacji według schematu SYNTAX Score.
 
 \clearpage
 % ===================================================================
@@ -64,7 +64,8 @@ Określenie wpływu kompresji stratnej obrazów angiografii rentgenowskiej na sk
 \begin{enumerate}
     \item Porównanie trzech formatów kompresji (JPEG, JPEG2000, AVIF) pod kątem jakości obrazu mierzonej wskaźnikami PSNR i~SSIM.
     \item Zbadanie wpływu kompresji danych treningowych na skuteczność modelu, mierzoną względem modelu bazowego trenowanego na danych oryginalnych (Eksperyment~A).
-    \item Wyznaczenie optymalnego poziomu kompresji zapewniającego maksymalną redukcję rozmiaru przy minimalnej utracie dokładności klasyfikacji.
+    \item Zbadanie wpływu kompresji danych testowych na skuteczność modelu wytrenowanego na danych oryginalnych (Eksperyment~B).
+    \item Wyznaczenie optymalnego poziomu kompresji zapewniającego maksymalną redukcję rozmiaru przy minimalnej utracie skuteczności klasyfikacji.
     \item Sformułowanie rekomendacji dla systemów PACS i~platform telemedycznych.
 \end{enumerate}
 
@@ -75,6 +76,7 @@ Postawiono następujące hipotezy badawcze:
     \item[H2:] Format AVIF, dzięki nowoczesnym technikom predykcji wewnątrzramkowej, zachowuje skuteczność modeli na poziomie co najmniej porównywalnym z~JPEG2000 przy tym samym współczynniku kompresji.
     \item[H3:] Istnieje progowy poziom kompresji, poniżej którego następuje wyraźny spadek skuteczności klasyfikacji, przy czym próg ten zależy od zastosowanego formatu.
     \item[H4:] W~zadaniu wieloetykietowej klasyfikacji segmentów SYNTAX, przy teście na oryginalnych obrazach PNG, model trenowany na danych skompresowanych nie wykazuje istotnego spadku skuteczności w~porównaniu z~modelem bazowym; nie można jednak na tej podstawie wnioskować o~braku wpływu kompresji na pełną wartość diagnostyczną angiografii klinicznej.
+    \item[H5:] Kompresja danych \emph{testowych} (model trenowany na oryginałach, ewaluowany na obrazach skompresowanych) obniża skuteczność modelu, przy czym wielkość spadku zależy od formatu kompresji.
 \end{enumerate}
 
 \clearpage
@@ -229,7 +231,8 @@ Przeprowadzono badanie składające się z~następujących etapów:
     \item \textbf{Pomiar jakości kompresji} -- obliczenie PSNR, SSIM i~współczynnika kompresji dla wszystkich wariantów.
     \item \textbf{Trening modelu bazowego} -- trening ResNet-50 i~EfficientNet-B0 na oryginalnych obrazach PNG, walidacja i~test również na PNG. Stanowi to górny punkt odniesienia dla Eksperymentu~A.
     \item \textbf{Eksperyment~A} -- trening modeli na danych skompresowanych z~walidacją w~tej samej domenie (te same $Q$ i~format) oraz ewaluacja końcowa na oryginalnych danych testowych PNG.
-    \item \textbf{Analiza wyników} -- porównanie formatów, wyznaczenie wpływu kompresji względem modelu bazowego oraz optymalnego poziomu kompresji.
+    \item \textbf{Eksperyment~B} -- scenariusz odwrotny: model bazowy (trenowany na PNG) ewaluowany na \emph{skompresowanym} zbiorze testowym dla każdego formatu i~poziomu~$Q$.
+    \item \textbf{Analiza wyników} -- porównanie formatów oraz wyznaczenie wpływu kompresji danych treningowych (Eksperyment~A) i~testowych (Eksperyment~B) względem modelu bazowego.
 \end{enumerate}
 
 \subsection{Opis danych}
@@ -272,6 +275,13 @@ Trening i~ewaluacja przebiegały zgodnie z~zasadą zachowania domeny: model tren
 \subsection{Eksperyment A: Trening na danych skompresowanych}
 
 W~Eksperymencie~A zbadano wpływ jakości danych treningowych na końcową skuteczność modelu. Dla każdego formatu kompresji ($\in \{\text{JPEG, JPEG2000, AVIF}\}$), poziomu jakości ($Q \in \{10, 20, 30, 40, 50, 60, 70, 75, 80, 85, 90, 95, 100\}$) oraz architektury ($\in \{\text{ResNet-50, EfficientNet-B0}\}$) wytrenowano oddzielny model. Łącznie wykonano 78 treningów Eksperymentu~A oraz dwa treningi modeli bazowych (po jednym dla każdej architektury), co daje 80 trenowanych modeli.
+
+\subsection{Eksperyment B: Ewaluacja na danych skompresowanych}
+\label{sec:exp_b_setup}
+
+Eksperyment~B stanowi lustrzane odbicie Eksperymentu~A: bada wpływ kompresji danych \emph{testowych} (a~nie treningowych) na skuteczność modelu. Wykorzystano \emph{ten sam} model bazowy (trenowany i~walidowany wyłącznie na nieskompresowanych obrazach PNG), który następnie ewaluowano na skompresowanym zbiorze testowym -- osobno dla każdego formatu ($\in \{\text{JPEG, JPEG2000, AVIF}\}$) i~poziomu~$Q$. Scenariusz ten odpowiada sytuacji praktycznej, w~której model wytrenowany w~środowisku badawczym (na czystych danych) jest wdrażany w~systemie kompresującym obraz przed analizą (np. PACS lub telemedycyna).
+
+Kluczową cechą metodologiczną Eksperymentu~B jest to, że \textbf{nie odbywa się w~nim żaden trening} -- jest to czysta ewaluacja jednego, ustalonego modelu na różnych wariantach danych wejściowych. W~konsekwencji ewentualny spadek skuteczności \emph{nie może} być przypisany losowości treningu (jednemu ziarnu), w~odróżnieniu od zmienności obserwowanej w~Eksperymencie~A -- jest deterministycznym efektem kompresji danych testowych. Łącznie wykonano $2 \times 3 \times 13 = 78$ ewaluacji (2~architektury, 3~formaty, 13~poziomów~$Q$).
 
 
 \clearpage
@@ -541,6 +551,48 @@ Brak zależności skuteczności od poziomu kompresji nie jest też swoisty dla d
 
 Wniosek ten ograniczamy do badanego zadania. Brak wykrywalnego wpływu~$Q$ na skuteczność dotyczy konkretnie wieloetykietowej klasyfikacji obecności segmentów SYNTAX przy teście na oryginalnych PNG i~nie może być uogólniany na inne zastosowania obrazów angiograficznych. Zadania wymagające odwzorowania drobnej struktury -- segmentacja granic naczyń, detekcja i~ilościowa ocena zwężeń -- mogą wykazywać istotnie większą wrażliwość na kompresję, ponieważ opierają się właśnie na cechach, które kompresja stratna degraduje najsilniej.
 
+\subsection{Eksperyment B: Wpływ kompresji danych testowych}
+\label{sec:wyniki_b}
+
+Eksperyment~B sprawdza scenariusz odwrotny do Eksperymentu~A: model bazowy (trenowany na PNG) jest ewaluowany na skompresowanym zbiorze testowym (zob.~podrozdział~\ref{sec:exp_b_setup}). Ponieważ model jest ustalony, a~zmienia się jedynie zbiór testowy, ewentualny spadek skuteczności jest deterministycznym efektem kompresji danych wejściowych, a~nie szumem treningu. Wyniki przedstawia Tabela~\ref{tab:exp_b} oraz rysunek~\ref{fig:exp_b_map}.
+
+\begin{table}[H]
+\centering
+\caption{Eksperyment~B: średnie mAP po 13 poziomach~$Q$ ($n=13$) oraz spadek mAP między $Q=100$ a~$Q=10$. Model bazowy testowany na obrazach skompresowanych. Wartość bazowa (test na PNG): ResNet-50 mAP $=0{,}655$; EfficientNet-B0 mAP $=0{,}622$.}
+\label{tab:exp_b}
+\begin{tabular}{llccc}
+\toprule
+Architektura & Format & $\overline{\mathrm{mAP}} \pm \sigma$ & spadek $Q_{100}\!\to\!Q_{10}$ & Spearman $\rho$ \\
+\midrule
+ResNet-50 & JPEG       & $0{,}650 \pm 0{,}010$ & $+0{,}033$ & $+0{,}77^{**}$ \\
+ResNet-50 & JPEG2000   & $0{,}651 \pm 0{,}003$ & $+0{,}012$ & $+0{,}32$ \\
+ResNet-50 & AVIF       & $0{,}654 \pm 0{,}004$ & $-0{,}005$ & $-0{,}17$ \\
+\midrule
+EfficientNet-B0 & JPEG       & $0{,}611 \pm 0{,}030$ & $+0{,}109$ & $+0{,}73^{**}$ \\
+EfficientNet-B0 & JPEG2000   & $0{,}620 \pm 0{,}006$ & $+0{,}016$ & $+0{,}52$ \\
+EfficientNet-B0 & AVIF       & $0{,}622 \pm 0{,}006$ & $+0{,}020$ & $+0{,}47$ \\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+{\footnotesize $^{**}$ korelacja istotna na poziomie $p<0{,}01$. Dodatnie $\rho$ oznacza spadek mAP wraz ze wzrostem kompresji (malejące~$Q$).}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{plots/fig_exp_b_map.pdf}
+\caption{Eksperyment~B: mAP w~funkcji poziomu kompresji \emph{zbioru testowego}~$Q$ (model trenowany na PNG). Linia przerywana -- wynik bazowy (test na PNG). Oś~$Q$ odwrócona -- kompresja rośnie w~prawo. W~odróżnieniu od Eksperymentu~A widoczny jest spadek skuteczności przy silnej kompresji, najsilniejszy dla JPEG.}
+\label{fig:exp_b_map}
+\end{figure}
+
+W~odróżnieniu od Eksperymentu~A, w~którym skuteczność była płaska, Eksperyment~B \emph{ujawnia} wpływ kompresji. Dla \textbf{JPEG} kompresja danych testowych istotnie obniża skuteczność: korelacja mAP z~poziomem~$Q$ jest dodatnia i~istotna w~obu architekturach (Spearman $\rho=0{,}77$, $p=0{,}002$ dla ResNet-50; $\rho=0{,}73$, $p=0{,}005$ dla EfficientNet-B0), a~spadek mAP między $Q=100$ a~$Q=10$ sięga $0{,}033$ (ResNet-50) i~$0{,}109$ (EfficientNet-B0). Dla \textbf{JPEG2000} i~\textbf{AVIF} korelacje są słabsze i~nieistotne (po korekcie), a~spadki nie przekraczają $0{,}02$. Nominalnie najsilniejszą degradację obserwuje się więc dla JPEG; należy jednak zaznaczyć, że bezpośrednie porównanie formatów (test Friedmana z~poziomami~$Q$ jako blokami) \emph{nie} wykazało istotnej różnicy między nimi ($p=0{,}23$ dla ResNet-50, $p=0{,}15$ dla EfficientNet-B0). Przy pojedynczej ewaluacji na każdą komórkę moc tego porównania jest ograniczona, dlatego wniosek o~przewadze łagodniejszych formatów formułujemy ostrożnie -- jako tendencję spójną z~charakterem artefaktów (blokowość JPEG), a~nie jako różnicę potwierdzoną testem omnibus.
+
+Degradacja JPEG ma przy tym charakter \emph{progowy}, a~nie stopniowy. Skuteczność pozostaje nieodróżnialna od wyniku bazowego (test na PNG) aż do $Q \approx 30$, a~wyraźny spadek następuje dopiero przy $Q \le 20$, z~załamaniem przy~$Q=10$ (dla EfficientNet-B0 mAP spada wówczas z~${\sim}0{,}62$ do~$0{,}51$). Jest to spójne z~naturą kompresji DCT: artefakty blokowe i~utrata wysokich częstotliwości stają się destrukcyjne dla cienkich struktur naczyniowych dopiero przy bardzo niskiej jakości. Potwierdza to pomiar wierności obrazu przy tej samej, silnej kompresji ($\mathrm{CR}\approx 49\times$, $Q=10$): JPEG osiąga SSIM $0{,}81$ wobec $0{,}90$ dla AVIF i~$0{,}89$ dla JPEG2000, a~PSNR $33{,}5$~dB wobec ${\sim}38$~dB -- nowsze formaty zachowują przy tym samym budżecie pamięciowym wyraźnie wyższą wierność, co tłumaczy ich odporność.
+
+Skala degradacji zależy też od architektury: EfficientNet-B0 traci na JPEG~$Q=10$ około trzykrotnie więcej niż ResNet-50 ($-0{,}109$ wobec $-0{,}033$ mAP). Jest to spójne z~obserwacjami z~Eksperymentu~A -- EfficientNet-B0 miał niższy wynik bazowy i~silniejsze przeuczenie, a~zatem mniejszy zapas odporności na przesunięcie rozkładu danych wejściowych. W~kontekście praktycznym czyni to ResNet-50 bezpieczniejszym wyborem dla scenariuszy, w~których dane wejściowe mogą podlegać kompresji.
+
+Wynik ten ma podwójne znaczenie. Po pierwsze -- metodologiczne: dowodzi, że zastosowany potok pomiarowy \emph{jest czuły} na kompresję obrazu, gdy wpływa ona na zadanie. Płaski wynik Eksperymentu~A nie wynika zatem z~niewrażliwości aparatu, lecz jest realną własnością tamtego scenariusza (zgodność domen treningu i~testu). Po drugie -- praktyczne: przy kompresji danych \emph{wejściowych} model dotychczas niewidzący artefaktów staje się na nie wrażliwy. Łącząc oba eksperymenty, najważniejszym czynnikiem nie jest sama kompresja, lecz \textbf{zgodność domeny danych treningowych i~testowych}: model radzi sobie z~kompresją, na którą został przygotowany w~treningu, a~traci skuteczność przy niezgodności domen (Eksperyment~B, format JPEG).
+
 \clearpage
 % ===================================================================
 % 9. WNIOSKI
@@ -555,9 +607,11 @@ Na podstawie przeprowadzonych eksperymentów sformułowano następujące wnioski
 
     \item \emph{H2 (AVIF) -- potwierdzona w~sensie równoważności.} AVIF osiąga skuteczność statystycznie równoważną z~JPEG2000 i~JPEG (TOST, $\Delta=\pm 0{,}02$). Nominalnie najwyższa średnia AVIF oraz najmniejszy rozrzut wyników po~$Q$ nie są jednak istotne statystycznie (rozrzut pozostaje na poziomie szumu pojedynczego ziarna i~nie był testowany formalnie) i~nie stanowią dowodu przewagi.
 
-    \item \emph{H3 (próg degradacji) -- nie potwierdzona.} Nie wykryto stabilnego, zależnego od formatu progu degradacji: skuteczność jest w~przybliżeniu płaska w~całym zakresie~$Q$ ($10$--$100$), a~pojedyncze niskie punkty (np.~EfficientNet-B0/JPEG przy~$Q=10$) nie powtarzają się spójnie między architekturami i~mieszczą się w~rozrzucie pojedynczego ziarna. W~badanym zakresie nawet silna kompresja (do $\mathrm{CR} \approx 107\times$) zachowuje więc informację istotną dla zadania -- lub ewentualny próg leży poniżej granicy wykrywalności tego planu badawczego.
+    \item \emph{H3 (próg degradacji) -- potwierdzona warunkowo, zależnie od scenariusza.} Przy kompresji danych \emph{treningowych} (Eksperyment~A) nie wykryto progu degradacji -- skuteczność jest płaska w~całym zakresie~$Q$, ponieważ model adaptuje się do artefaktów obecnych w~treningu. Próg ujawnia się natomiast przy kompresji danych \emph{testowych} (Eksperyment~B, format JPEG): skuteczność pozostaje stabilna do $Q \approx 30$, a~wyraźny spadek następuje przy $Q \le 20$. Próg jest więc zależny od formatu (widoczny dla JPEG, niewidoczny dla JPEG2000/AVIF), zgodnie z~hipotezą, lecz dotyczy konkretnie scenariusza kompresji wejścia.
 
     \item \emph{H4 (kompresja a~model bazowy) -- potwierdzona; główny pozytywny wynik pracy.} Skuteczność modeli trenowanych na danych skompresowanych nie różni się istotnie od modelu bazowego trenowanego na PNG (różnice mAP od~$-0{,}007$ do~$+0{,}006$, w~granicach szumu). Przypadki, w~których model skompresowany nominalnie przewyższa model bazowy, nie są realnym ,,efektem regularyzacji'', lecz przejawem szumu pojedynczego ziarna, ponieważ trening na danych zdegradowanych nie może przyczynowo poprawić skuteczności na danych czystych. Poprawnym sformułowaniem wniosku jest zatem brak dowodu na utratę -- w~badanym zadaniu klasyfikacyjnym, przy teście na oryginalnych PNG -- informacji istotnej dla rozpoznania obecności segmentów. Nie jest to równoznaczne z~brakiem wpływu kompresji na pełną wartość diagnostyczną angiografii klinicznej, której niniejsza praca nie ocenia.
+
+    \item \emph{H5 (kompresja danych testowych) -- potwierdzona; wykrywalny efekt kompresji.} W~scenariuszu odwrotnym (model trenowany na PNG, test na obrazach skompresowanych) kompresja \emph{istotnie} obniża skuteczność dla formatu JPEG (Spearman $\rho=0{,}73$--$0{,}77$, $p<0{,}01$; spadek mAP do $0{,}11$ dla EfficientNet-B0), podczas gdy dla JPEG2000 i~AVIF degradacja jest słabsza i~nieistotna. Ponieważ model jest tu ustalony, jest to efekt deterministyczny, a~nie szum treningu. Wynik ten dowodzi zarazem, że zastosowany potok pomiarowy jest czuły na kompresję, gdy ta wpływa na zadanie -- co potwierdza, że płaskość Eksperymentu~A jest realną własnością tamtego scenariusza. Zestawienie obu eksperymentów wskazuje, że decydująca jest \emph{zgodność domeny danych treningowych i~testowych}, a~nie sama kompresja.
 
     \item \emph{Ogólna skuteczność.} F1-macro na poziomie $0{,}62$--$0{,}68$ oraz mAP $0{,}62$--$0{,}66$ stanowią solidny wynik dla wieloetykietowej klasyfikacji 26 klas przy 1000 obrazów treningowych. Hamming accuracy na poziomie $0{,}87$--$0{,}90$ pokazuje, że model poprawnie przewiduje większość pojedynczych pozycji w~wektorze etykiet.
 \end{enumerate}
@@ -569,11 +623,13 @@ Na podstawie przeprowadzonych eksperymentów sformułowano następujące wnioski
 \section{Podsumowanie}
 \label{sec:podsumowanie}
 
-W~niniejszej pracy przeprowadzono badanie wpływu kompresji stratnej obrazów angiografii wieńcowej na skuteczność dwóch architektur głębokiego uczenia (ResNet-50, EfficientNet-B0) w~zadaniu wieloetykietowej klasyfikacji 26 segmentów naczyniowych według schematu SYNTAX Score. Zbadano trzy formaty kompresji (JPEG, JPEG2000, AVIF) na trzynastu poziomach $Q$-równoważnych ($Q \in \{10, 20, \dots, 95, 100\}$), gdzie dla JPEG2000 i~AVIF poziom~$Q$ definiowany jest poprzez zgodność współczynnika kompresji z~JPEG (\textit{matched compression ratio}), uzyskaną algorytmem wyszukiwania binarnego.
+W~niniejszej pracy przeprowadzono badanie wpływu kompresji stratnej obrazów angiografii wieńcowej na skuteczność dwóch architektur głębokiego uczenia (ResNet-50, EfficientNet-B0) w~zadaniu wieloetykietowej klasyfikacji 26 segmentów naczyniowych według schematu SYNTAX Score. Zbadano trzy formaty kompresji (JPEG, JPEG2000, AVIF) na trzynastu poziomach $Q$-równoważnych ($Q \in \{10, 20, \dots, 95, 100\}$), gdzie dla JPEG2000 i~AVIF poziom~$Q$ definiowany jest poprzez zgodność współczynnika kompresji z~JPEG (\textit{matched compression ratio}), uzyskaną algorytmem wyszukiwania binarnego. Przeprowadzono dwa komplementarne eksperymenty, różniące się tym, czy kompresji podlegają dane treningowe (Eksperyment~A), czy testowe (Eksperyment~B).
+
+Najważniejszym wnioskiem łączącym oba eksperymenty jest to, że o~skuteczności decyduje przede wszystkim \textbf{zgodność jakości obrazu między fazą treningu a~fazą testu}, a~nie sam fakt kompresji. Gdy domeny są zgodne -- model trenowany i~testowany przy tym samym poziomie kompresji (lub gdy kompresji podlega wyłącznie trening, a~test odbywa się na oryginałach, jak w~Eksperymencie~A) -- skuteczność pozostaje praktycznie niezmieniona nawet przy bardzo silnej kompresji ($\mathrm{CR} \approx 107\times$). Gdy natomiast domeny się rozchodzą -- model trenowany na oryginałach analizuje obrazy skompresowane (Eksperyment~B) -- pojawia się wykrywalny spadek skuteczności, istotny statystycznie dla formatu JPEG i~zależny od poziomu kompresji oraz architektury. Kompresja nie jest więc dla modelu obojętna; jej wpływ ujawnia się jednak dopiero przy niezgodności domen treningowej i~testowej.
 
 \subsection{Realizacja celów}
 
-Zrealizowano cele szczegółowe pracy: (1)~ujednolicono porównanie trzech formatów kompresji poprzez metodologię dopasowanego współczynnika kompresji oraz zmierzono PSNR/SSIM/CR na zbiorze treningowym, (2)~zbadano wpływ kompresji danych treningowych na skuteczność dwóch architektur modeli (ResNet-50 i~EfficientNet-B0), (3)~przeprowadzono trening modeli bazowych na PNG jako górny punkt odniesienia, (4)~przeprowadzono pełną analizę statystyczną (Friedman, testy sparowane, korekta Holma, test równoważności TOST, korelacja jakość--skuteczność), (5)~sformułowano rekomendacje praktyczne. W~odniesieniu do celu dotyczącego \emph{optymalnego poziomu kompresji}: w~badanym zakresie nie zaobserwowano progu degradacji skuteczności, zatem ,,optymalny'' poziom sprowadza się do wniosku, że dopuszczalna jest agresywna kompresja (do $\mathrm{CR} \approx 107\times$) bez wykrywalnej utraty skuteczności na czystym zbiorze testowym.
+Zrealizowano wszystkie cele szczegółowe pracy: (1)~porównano trzy formaty kompresji pod kątem jakości obrazu (PSNR/SSIM/CR) z~zastosowaniem metodologii dopasowanego współczynnika kompresji, (2)~zbadano wpływ kompresji danych treningowych na skuteczność dwóch architektur (Eksperyment~A), (3)~zbadano wpływ kompresji danych testowych na model trenowany na oryginałach (Eksperyment~B), (4)~wyznaczono poziomy kompresji bezpieczne dla skuteczności klasyfikacji, (5)~sformułowano rekomendacje praktyczne -- przy czym (2)--(3) wsparto pełną analizą statystyczną (Friedman, testy sparowane, korekta Holma, test równoważności TOST, korelacja jakość--skuteczność) z~modelem bazowym na PNG jako punktem odniesienia. W~odniesieniu do celu (4): przy kompresji danych \emph{treningowych} nie zaobserwowano progu degradacji (dopuszczalna kompresja do $\mathrm{CR} \approx 107\times$), natomiast przy kompresji danych \emph{testowych} bezpiecznym progiem dla JPEG jest $Q \gtrsim 30$, a~JPEG2000 i~AVIF pozostają odporne nawet przy silniejszej kompresji.
 
 \subsection{Rekomendacje praktyczne}
 
@@ -582,6 +638,8 @@ Na podstawie uzyskanych wyników można sformułować rekomendacje dla systemów
 Nie wykazano istotnego wpływu formatu kompresji na skuteczność przy dopasowanym współczynniku kompresji -- trzy formaty są statystycznie równoważne w~obu architekturach (TOST, $\Delta=\pm 0{,}02$). O~wyborze kodeka mogą zatem decydować względy inżynierskie (kompatybilność ze standardem DICOM, czas kodowania, wsparcie sprzętowe), a~nie obawa o~skuteczność modelu w~badanym zadaniu klasyfikacji segmentów. W~praktyce JPEG2000 pozostaje bezpiecznym, zgodnym z~DICOM wyborem; AVIF jest atrakcyjną alternatywą (nominalnie najwyższa średnia i~najmniejszy rozrzut, choć różnice nieistotne statystycznie), mimo braku standaryzacji w~DICOM; JPEG pozostaje akceptowalny dzięki prostocie i~powszechnemu wsparciu sprzętowemu.
 
 W~badanym zakresie dopuszczalna jest agresywna kompresja danych treningowych (do $\mathrm{CR} \approx 107\times$) bez wykrywalnego spadku skuteczności na czystym zbiorze testowym, niezależnie od formatu. Trening modeli w~domenie skompresowanej jest przy tym bezpieczny pod warunkiem zgodności domeny treningowej i~walidacyjnej -- skuteczność na czystych danych testowych pozostaje równoważna z~modelem bazowym trenowanym wyłącznie na PNG (potwierdzona testem równoważności).
+
+Inaczej przedstawia się scenariusz kompresji danych \emph{wejściowych} w~fazie wdrożenia (Eksperyment~B). Jeżeli model wytrenowany na obrazach wysokiej jakości ma analizować strumień skompresowany, rekomenduje się \textbf{JPEG2000 lub AVIF}, które zachowują skuteczność nawet przy silnej kompresji ($\mathrm{CR}\approx 49\times$). \textbf{JPEG} jest natomiast bezpieczny jedynie do umiarkowanych poziomów ($Q \gtrsim 30$); przy silniejszej kompresji ($Q \le 20$) jego artefakty blokowe istotnie obniżają skuteczność, szczególnie dla mniejszej architektury EfficientNet-B0. Najpewniejszym rozwiązaniem pozostaje jednak zachowanie zgodności jakości obrazu między treningiem a~wdrożeniem.
 
 \subsection{Ograniczenia}
 
@@ -597,7 +655,7 @@ W~badanym zakresie dopuszczalna jest agresywna kompresja danych treningowych (do
 \subsection{Kierunki dalszych badań}
 
 \begin{itemize}
-    \item Eksperyment~B (trening na oryginalnych PNG, test na obrazach skompresowanych) -- konfiguracja odwrotna do badanej w~niniejszej pracy, w~której kompresja dotyka danych \emph{testowych}, a~nie treningowych. Pozwala zmierzyć odporność już wyuczonego modelu na kompresję danych wejściowych w~scenariuszach telemedycznych. Można oczekiwać, że największe spadki skuteczności wystąpią przy silnej niezgodności domen (model uczony na obrazach wysokiej jakości, testowany na silnie skompresowanych), gdy model nie miał okazji nauczyć się odporności na artefakty kompresji; weryfikacja tej hipotezy pozostaje przedmiotem dalszych prac.
+    \item Trening na zbiorze o~mieszanej kompresji (\emph{mixed-quality training}) -- jeden model uczony jednocześnie na obrazach o~różnych poziomach~$Q$, a~następnie testowany zarówno na oryginałach, jak i~na danych skompresowanych. Pozwoliłoby to sprawdzić, czy celowa ekspozycja na zróżnicowane artefakty w~treningu uodparnia model na kompresję danych wejściowych (i~tym samym łagodzi spadek obserwowany dla JPEG w~Eksperymencie~B).
     \item Powtórzenie eksperymentów z~wieloma ziarnami losowymi (3--5) w~celu uzyskania przedziałów ufności i~odzyskania mocy statystycznej -- jedyny sposób rozstrzygnięcia, czy nominalna tendencja AVIF rzędu ${\sim}0{,}5$~pp jest realna, czy stanowi szum.
     \item Analiza map cech (\textit{feature maps}) za pomocą entropii spektralnej i~entropii Shannona w~celu zbadania, jak kompresja wpływa na wewnętrzną reprezentację modelu.
     \item Rozszerzenie badania na zadania segmentacji naczyniowej i~detekcji zwężeń, gdzie wpływ kompresji może być bardziej widoczny.

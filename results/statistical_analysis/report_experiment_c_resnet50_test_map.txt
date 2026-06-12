@@ -1,0 +1,41 @@
+================================================================================
+EXPERIMENT C — DESCRIPTIVE ANALYSIS (mixed-quality training)
+================================================================================
+
+Model: resnet50   Task: syntax
+
+One model per format, trained on a MIXTURE of Q (compression as augmentation),
+then tested on clean PNG and on every Q level. n=1 per cell: no C-vs-B
+significance test is reported, only the descriptive flattening of the curve.
+
+------------------------------------------------------------------------
+test_map: B (PNG-trained) vs C (mixed-trained), per format
+------------------------------------------------------------------------
+format       B drop   B rho |   C drop   C rho |   C PNG  vs base
+jpeg         +0.033   +0.77 |   +0.007   -0.07 |   0.659   +0.005
+jpeg2000     +0.012   +0.32 |   -0.001   -0.14 |   0.659   +0.004
+avif         -0.005   -0.17 |   -0.005   -0.38 |   0.655   +0.001
+
+(B drop = Q100->Q10 mAP drop for the fixed PNG-trained model;
+ C drop = same for the mixed-trained model; positive rho => metric
+ falls as compression rises. C PNG = mAP on clean PNG, which is NOT
+ in the training mixture — the non-circular check that the cure is free.)
+
+------------------------------------------------------------------------
+Threshold-metric note (clean-PNG gap vs baseline):
+------------------------------------------------------------------------
+  test_f1_micro:
+    jpeg       PNG 0.7771  vs baseline 0.7795  gap -0.0024
+    jpeg2000   PNG 0.7881  vs baseline 0.7795  gap +0.0086
+    avif       PNG 0.7796  vs baseline 0.7795  gap +0.0001
+  test_hamming_accuracy:
+    jpeg       PNG 0.8847  vs baseline 0.8868  gap -0.0021
+    jpeg2000   PNG 0.8941  vs baseline 0.8868  gap +0.0073
+    avif       PNG 0.8865  vs baseline 0.8868  gap -0.0003
+
+================================================================================
+SUMMARY
+================================================================================
+JPEG mAP: B drop +0.033 (rho +0.77) -> C drop +0.007 (rho -0.07); clean-PNG gap +0.005.
+Mixed training flattens the JPEG curve at ~zero cost on the unseen PNG domain.
+================================================================================

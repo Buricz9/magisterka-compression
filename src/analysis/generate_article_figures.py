@@ -309,6 +309,87 @@ def exp_b_figure(col="test_map", ylabel="mAP [%]", out_name="fig_exp_b_map.pdf")
     print(f"saved: {PLOTS / out_name}")
 
 
+def _load_c(model):
+    """Experiment C results (mixed-quality training), all formats concatenated.
+
+    One CSV per format; each holds a clean-PNG row plus 13 compressed Q rows.
+    Returns only the compressed rows (numeric test_quality), matching _load_b.
+    """
+    frames = []
+    for fmt, *_ in FORMATS:
+        p = (config.RESULTS_ROOT / "experiment_c" /
+             f"{model}_arcade_syntax_mixed_{fmt}_results.csv")
+        if p.exists():
+            frames.append(pd.read_csv(p))
+    if not frames:
+        return None
+    d = pd.concat(frames, ignore_index=True)
+    comp = d[d["test_quality"].astype(str) != "png"].copy()
+    comp["test_quality"] = pd.to_numeric(comp["test_quality"], errors="coerce")
+    return comp.dropna(subset=["test_quality"]).sort_values("test_quality")
+
+
+def exp_c_figure(col="test_map", ylabel="mAP [%]", out_name="fig_exp_c_map.pdf"):
+    """Experiment C vs B for JPEG: does mixed-quality training cure the drop?
+
+    Per model, overlays the JPEG curve from Experiment B (fixed PNG-trained model,
+    falling towards low Q) and Experiment C (mixed-quality-trained model, flat),
+    against the same PNG baseline. The collapse of the B->C gap is the cure: the
+    model that saw compression in training is no longer hurt by it at test time.
+    JPEG is shown because it is the only format Experiment B degraded.
+    """
+    color_b, color_c = "#d62728", "#1f77b4"
+    vals = []
+    for model, _ in MODELS:
+        for loader in (_load_b, _load_c):
+            d = loader(model)
+            if d is not None and not d.empty:
+                s = d[d["format"] == "jpeg"]
+                vals.extend((s[col] * 100).tolist())
+        b = _baseline(model, col)
+        if b is not None:
+            vals.append(b * 100)
+    if not vals:
+        print("no experiment_c CSVs - skipping fig_exp_c")
+        return
+    lo, hi = min(vals), max(vals)
+    pad = max(0.4, (hi - lo) * 0.06)
+    ylim = (lo - pad, hi + pad)
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
+    for ax, (model, mlabel) in zip(axes, MODELS):
+        for loader, color, flabel, marker, ls in (
+                (_load_b, color_b, "JPEG, trening PNG (Eksp. B)", "o", "--"),
+                (_load_c, color_c, "JPEG, trening mieszany (Eksp. C)", "s", "-")):
+            d = loader(model)
+            if d is None or d.empty:
+                continue
+            s = d[d["format"] == "jpeg"].sort_values("test_quality")
+            if s.empty:
+                continue
+            ax.plot(s["test_quality"], s[col] * 100, linestyle=ls, color=color,
+                    linewidth=1.2, alpha=0.5, zorder=1)
+            ax.plot(s["test_quality"], s[col] * 100, linestyle="none", marker=marker,
+                    color=color, markersize=6, label=flabel, zorder=3)
+        b = _baseline(model, col)
+        if b is not None:
+            ax.axhline(b * 100, color="black", linestyle=":", linewidth=1.4,
+                       label="Baseline (test PNG)", zorder=2)
+        ax.set_title(mlabel, fontsize=13, fontweight="bold")
+        ax.set_xlabel("Poziom kompresji zbioru testowego Q", fontsize=11)
+        ax.set_ylabel(ylabel, fontsize=11)
+        ax.invert_xaxis()
+        ax.set_ylim(*ylim)
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=9, loc="best")
+    fig.suptitle("Eksperyment C: trening na mieszanej kompresji likwiduje spadek "
+                 "JPEG z Eksperymentu B", fontsize=14, fontweight="bold")
+    fig.tight_layout()
+    fig.savefig(PLOTS / out_name, bbox_inches="tight")
+    plt.close(fig)
+    print(f"saved: {PLOTS / out_name}")
+
+
 def main():
     _metric_vs_q("test_map", "mAP [%]",
                  "Eksperyment A: mAP w funkcji poziomu kompresji Q", "fig_exp_a_map.pdf")
@@ -317,6 +398,7 @@ def main():
     quality_figure()
     map_vs_psnr_figure()
     exp_b_figure()
+    exp_c_figure()
 
 
 if __name__ == "__main__":
